@@ -1,238 +1,59 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   Base
-   ============================================================ */
-
 @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
   body {
-    @apply bg-higame-bg text-higame-text font-inter;
-    background-image:
-      radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.04) 0%, transparent 60%);
-    min-height: 100vh;
+    @apply bg-higame-bg text-higame-text font-inter antialiased bg-grid-pattern bg-grid;
+    /* Adicionar um padding pro grid não colar nas bordas dependendo da tela */
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* ==========================================================
+     TETRIS UI COMPONENTS
+  ========================================================== */
+  
+  .glass-card {
+    /* Agora é um Tetris Card! Sem blur, com borda dura e fundo escuro */
+    @apply bg-higame-surface border-4 border-higame-border shadow-hard relative;
+    /* Efeito de relevo de botão 8-bit */
+    box-shadow: inset -4px -4px 0px 0px rgba(0,0,0,0.5), 4px 4px 0px 0px #000;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-outfit;
-  }
-
+  /* Scrollbar quadrada e dura */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 12px;
+    height: 12px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-higame-surface;
+    @apply bg-higame-surface border-l-4 border-higame-border;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-higame-border2 rounded-full;
+    @apply bg-higame-muted border-4 border-higame-surface;
   }
-
+  
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-higame-purple;
-  }
-}
-
-/* ============================================================
-   Components
-   ============================================================ */
-
-@layer components {
-
-  /* Glass Card */
-  .glass-card {
-    @apply bg-higame-surface/80 backdrop-blur-sm border border-higame-border rounded-2xl;
+    @apply bg-higame-text;
   }
 
-  .glass-card-hover {
-    @apply glass-card transition-all duration-300
-      hover:border-higame-border2 hover:shadow-card-hover hover:-translate-y-0.5;
-  }
-
-  /* Neon Button */
-  .btn-primary {
-    @apply relative overflow-hidden px-6 py-3 rounded-xl font-outfit font-semibold text-sm
-      bg-gradient-higame text-white transition-all duration-300
-      hover:shadow-glow-purple hover:scale-[1.02] active:scale-[0.98]
-      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
-  }
-
-  .btn-secondary {
-    @apply px-6 py-3 rounded-xl font-outfit font-semibold text-sm
-      bg-higame-surface2 border border-higame-border text-higame-text
-      transition-all duration-300
-      hover:border-higame-border2 hover:bg-higame-surface3
-      active:scale-[0.98]
-      disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-ghost {
-    @apply px-4 py-2 rounded-xl font-outfit font-medium text-sm
-      text-higame-text2 transition-all duration-200
-      hover:text-higame-text hover:bg-higame-surface2
-      active:scale-[0.98];
-  }
-
-  .btn-danger {
-    @apply px-6 py-3 rounded-xl font-outfit font-semibold text-sm
-      bg-higame-danger/10 border border-higame-danger/30 text-higame-danger
-      transition-all duration-300
-      hover:bg-higame-danger/20 hover:border-higame-danger/50
-      active:scale-[0.98];
-  }
-
-  /* Input */
-  .input-field {
-    @apply w-full px-4 py-3 rounded-xl bg-higame-surface2 border border-higame-border
-      text-higame-text placeholder:text-higame-muted font-inter text-sm
-      transition-all duration-200 outline-none
-      focus:border-higame-purple focus:ring-2 focus:ring-higame-purple/20;
-  }
-
-  .input-label {
-    @apply block text-sm font-medium text-higame-text2 mb-1.5 font-inter;
-  }
-
-  /* Badge Tier */
-  .tier-badge {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-outfit font-semibold;
-  }
-
-  .tier-badge-gold {
-    @apply tier-badge bg-higame-gold/15 text-higame-gold border border-higame-gold/30;
-  }
-
-  .tier-badge-silver {
-    @apply tier-badge bg-higame-silver/15 text-higame-silver border border-higame-silver/30;
-  }
-
-  .tier-badge-bronze {
-    @apply tier-badge bg-higame-bronze/15 text-higame-bronze border border-higame-bronze/30;
-  }
-
-  .tier-badge-out {
-    @apply tier-badge bg-higame-danger/15 text-higame-danger border border-higame-danger/30;
-  }
-
-  /* Skeleton */
-  .skeleton {
-    @apply rounded-xl bg-higame-surface2 relative overflow-hidden;
-  }
-
-  .skeleton::after {
-    content: '';
-    @apply absolute inset-0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.04) 50%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2s linear infinite;
-  }
-
-  /* Page Section */
-  .page-section {
-    @apply mb-8;
-  }
-
-  .section-title {
-    @apply text-xl font-outfit font-bold text-higame-text mb-1;
-  }
-
-  .section-subtitle {
-    @apply text-sm font-inter text-higame-muted;
-  }
-
-  /* Divider */
-  .divider {
-    @apply border-t border-higame-border my-6;
-  }
-
-  /* Sidebar Item */
-  .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-inter font-medium
-      text-higame-text2 transition-all duration-200 cursor-pointer
-      hover:text-higame-text hover:bg-higame-surface2;
-  }
-
-  .sidebar-item-active {
-    @apply sidebar-item text-higame-text bg-higame-purple/10 border border-higame-purple/20;
-  }
-
-  /* Glow ring nos cards de tier */
-  .kpi-card-gold {
-    @apply glass-card border-higame-gold/30 bg-gradient-to-br from-higame-gold/5 to-transparent;
-    box-shadow: 0 0 30px rgba(245, 158, 11, 0.1), 0 4px 24px rgba(0,0,0,0.4);
-  }
-
-  .kpi-card-silver {
-    @apply glass-card border-higame-silver/30 bg-gradient-to-br from-higame-silver/5 to-transparent;
-    box-shadow: 0 0 30px rgba(148, 163, 184, 0.1), 0 4px 24px rgba(0,0,0,0.4);
-  }
-
-  .kpi-card-bronze {
-    @apply glass-card border-higame-bronze/30 bg-gradient-to-br from-higame-bronze/5 to-transparent;
-    box-shadow: 0 0 30px rgba(205, 127, 50, 0.1), 0 4px 24px rgba(0,0,0,0.4);
-  }
-
-  .kpi-card-out {
-    @apply glass-card border-higame-danger/30 bg-gradient-to-br from-higame-danger/5 to-transparent;
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.1), 0 4px 24px rgba(0,0,0,0.4);
-  }
-}
-
-/* ============================================================
-   Utilities
-   ============================================================ */
-
-@layer utilities {
+  /* Gradiente text apagado, substituído por cores neon sólidas */
   .text-gradient {
-    @apply bg-gradient-higame bg-clip-text text-transparent;
+    @apply text-higame-cyan;
+    -webkit-text-fill-color: initial;
+    background-clip: border-box;
+    -webkit-background-clip: border-box;
   }
+}
 
-  .text-gradient-gold {
-    background: linear-gradient(135deg, #F59E0B, #FCD34D);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .glow-purple {
-    box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
-  }
-
-  .glow-neon {
-    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
-  }
-
-  .glow-gold {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+/* ==========================================================
+   TIPOGRAFIA PIXELADA (H1, Titulos, etc)
+========================================================== */
+h1, h2, h3, h4, .font-tetris {
+  font-family: 'Press Start 2P', cursive;
+  line-height: 1.5;
+  text-transform: uppercase;
 }

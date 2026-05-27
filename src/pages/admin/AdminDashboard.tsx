@@ -11,22 +11,29 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchStats() {
       setLoading(true)
-      const [empData, seasonData] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact' }).eq('is_active', true).eq('role', 'employee').is('deleted_at', null),
-        supabase.from('seasons').select('*').eq('status', 'active').single(),
-      ])
-      const activeSeason = seasonData.data as Season | null
-      let rankingCount = 0
-      let topEmployee = null
-      if (activeSeason) {
-        const { count } = await supabase.from('rankings').select('id', { count: 'exact' }).eq('season_id', activeSeason.id)
-        rankingCount = count ?? 0
-        const { data: topData } = await supabase.from('rankings').select('total_xp, profile:profiles(full_name)').eq('season_id', activeSeason.id).order('total_xp', { ascending: false }).limit(1).single()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (topData) topEmployee = { full_name: (topData as any).profile?.full_name ?? '—', total_xp: (topData as any).total_xp }
+      try {
+        const [empData, seasonData] = await Promise.all([
+          supabase.from('profiles').select('id', { count: 'exact' }).eq('is_active', true).eq('role', 'employee').is('deleted_at', null),
+          supabase.from('seasons').select('*').eq('status', 'active').single(),
+        ])
+        const activeSeason = seasonData.data as Season | null
+        let rankingCount = 0
+        let topEmployee = null
+        
+        if (activeSeason) {
+          const { count } = await supabase.from('rankings').select('id', { count: 'exact' }).eq('season_id', activeSeason.id)
+          rankingCount = count ?? 0
+          const { data: topData } = await supabase.from('rankings').select('total_xp, profile:profiles(full_name)').eq('season_id', activeSeason.id).order('total_xp', { ascending: false }).limit(1).single()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (topData) topEmployee = { full_name: (topData as any).profile?.full_name ?? '—', total_xp: (topData as any).total_xp }
+        }
+        
+        setStats({ employees: empData.count ?? 0, activeSeason, rankingCount, topEmployee })
+      } catch (err) {
+        console.error('Erro ao carregar dados do admin:', err)
+      } finally {
+        setLoading(false)
       }
-      setStats({ employees: empData.count ?? 0, activeSeason, rankingCount, topEmployee })
-      setLoading(false)
     }
     fetchStats()
   }, [])
