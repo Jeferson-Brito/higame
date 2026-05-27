@@ -6,7 +6,7 @@ import { Navbar } from './Navbar'
 
 export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
-  const sidebarWidth = collapsed ? 72 : 240
+  const sidebarOffset = collapsed ? 110 : 290 // width (80/260) + left (16) + gap (14)
 
   return (
     <div className="min-h-screen bg-higame-bg">
@@ -14,23 +14,22 @@ export function AppLayout() {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
 
       {/* Navbar */}
-      <div style={{ marginLeft: `${sidebarWidth}px` }} className="hidden lg:block transition-all duration-300">
-        <Navbar sidebarCollapsed={collapsed} />
+      <div style={{ paddingLeft: `${sidebarOffset}px` }} className="hidden lg:block transition-all duration-300 w-full fixed top-0 z-30">
+        <div className="pt-4 pr-4">
+          <Navbar sidebarCollapsed={collapsed} />
+        </div>
       </div>
-      <div className="lg:hidden">
+      <div className="lg:hidden w-full fixed top-0 z-30">
         <Navbar sidebarCollapsed={false} />
       </div>
 
       {/* Main Content */}
-      <main
-        className="transition-all duration-300 pt-16 pb-20 lg:pb-6 min-h-screen"
-        style={{ marginLeft: 0 }}
-      >
+      <main className="transition-all duration-300 pt-24 pb-20 lg:pb-6 min-h-screen">
         <div
           className="lg:transition-all lg:duration-300"
-          style={{ marginLeft: `${sidebarWidth}px` }}
+          style={{ paddingLeft: `max(1rem, ${sidebarOffset}px)` }}
         >
-          <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto">
+          <div className="pr-4 sm:pr-6 py-6 max-w-7xl mx-auto">
             <Outlet />
           </div>
         </div>

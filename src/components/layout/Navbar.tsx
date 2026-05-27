@@ -25,9 +25,9 @@ export function Navbar({ sidebarCollapsed }: NavbarProps) {
 
   return (
     <header
-      className="fixed top-0 right-0 z-30 h-16 bg-higame-surface/80 backdrop-blur-md
-                 border-b border-higame-border flex items-center justify-between px-4 sm:px-6
-                 transition-all duration-300 left-0 lg:left-auto"
+      className="h-16 bg-higame-surface/80 backdrop-blur-glass
+                 border border-higame-border flex items-center justify-between px-4 sm:px-6
+                 transition-all duration-300 rounded-2xl shadow-glass"
     >
       {/* Mobile: logo */}
       <div className="lg:hidden flex items-center gap-2">

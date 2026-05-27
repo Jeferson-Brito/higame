@@ -56,10 +56,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 72 : 240 }}
+      animate={{ width: collapsed ? 80 : 260 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="hidden lg:flex flex-col h-screen bg-higame-surface border-r border-higame-border
-                 fixed left-0 top-0 z-40 overflow-hidden"
+      className="hidden lg:flex flex-col bg-higame-surface/80 backdrop-blur-glass border border-higame-border
+                 fixed left-4 top-4 bottom-4 z-40 rounded-3xl overflow-hidden shadow-glass"
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-higame-border flex-shrink-0">
@@ -176,12 +176,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </button>
       </div>
 
-      {/* Toggle collapse */}
       <button
         onClick={onToggle}
-        className="absolute -right-3 top-20 w-6 h-6 bg-higame-surface2 border border-higame-border
-                   rounded-full flex items-center justify-center text-higame-muted
-                   hover:text-higame-text hover:border-higame-border2 transition-all duration-200 z-50"
+        className="absolute -right-3 top-10 w-6 h-6 bg-higame-blurple text-white
+                   rounded-full flex items-center justify-center shadow-glow-purple
+                   hover:scale-110 transition-all duration-200 z-50 border-2 border-slate-900"
       >
         {collapsed
           ? <ChevronRight className="w-3 h-3" />

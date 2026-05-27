@@ -4,56 +4,77 @@
 
 @layer base {
   body {
-    @apply bg-higame-bg text-higame-text font-inter antialiased bg-grid-pattern bg-grid;
-    /* Adicionar um padding pro grid não colar nas bordas dependendo da tela */
-    background-attachment: fixed;
+    /* Fundo com cor base slate-950 e o gradiente radial adicionado no Tailwind */
+    @apply bg-higame-bg text-higame-text font-inter antialiased bg-radial-glow bg-fixed min-h-screen;
   }
 }
 
 @layer components {
   /* ==========================================================
-     TETRIS UI COMPONENTS
+     GLASSMORPHISM & PREMIUM UI COMPONENTS
   ========================================================== */
   
   .glass-card {
-    /* Agora é um Tetris Card! Sem blur, com borda dura e fundo escuro */
-    @apply bg-higame-surface border-4 border-higame-border shadow-hard relative;
-    /* Efeito de relevo de botão 8-bit */
-    box-shadow: inset -4px -4px 0px 0px rgba(0,0,0,0.5), 4px 4px 0px 0px #000;
+    /* Novo Glass Card estilo Discord/Linear */
+    @apply bg-higame-surface backdrop-blur-glass border border-higame-border rounded-2xl shadow-glass transition-all duration-300;
   }
 
-  /* Scrollbar quadrada e dura */
+  .glass-card-hover {
+    @apply glass-card hover:bg-higame-surface2 hover:border-higame-border2 hover:shadow-glass-hover hover:-translate-y-1 cursor-pointer;
+  }
+
+  /* Scrollbar moderna (fina, escura, sutil) */
   ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-higame-surface border-l-4 border-higame-border;
+    @apply bg-transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-higame-muted border-4 border-higame-surface;
+    @apply bg-white/10 rounded-full transition-colors;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-higame-text;
+    @apply bg-white/20;
   }
 
-  /* Gradiente text apagado, substituído por cores neon sólidas */
+  /* Gradiente text (Usado para números de destaque, XP, ranking) */
   .text-gradient {
-    @apply text-higame-cyan;
-    -webkit-text-fill-color: initial;
-    background-clip: border-box;
-    -webkit-background-clip: border-box;
+    @apply text-transparent bg-clip-text bg-gradient-higame font-outfit font-black;
+  }
+  
+  .text-gradient-blurple {
+    @apply text-transparent bg-clip-text bg-gradient-blurple font-outfit font-black;
+  }
+
+  /* Skeleton Loading (suave, combinando com o fundo slate) */
+  .skeleton {
+    @apply bg-white/5 animate-pulse rounded-lg;
+  }
+
+  /* ==========================================================
+     BOTÕES (GAMER/SAAS)
+  ========================================================== */
+  .btn-primary {
+    @apply flex items-center justify-center gap-2 px-4 py-2 bg-higame-blurple text-white rounded-xl font-inter font-medium 
+           hover:bg-opacity-90 hover:shadow-glow-purple transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+
+  .btn-secondary {
+    @apply flex items-center justify-center gap-2 px-4 py-2 bg-higame-surface border border-higame-border text-higame-text rounded-xl font-inter font-medium 
+           hover:bg-higame-surface2 hover:border-higame-border2 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply flex items-center justify-center gap-2 px-4 py-2 bg-higame-red/10 border border-higame-red/20 text-higame-red rounded-xl font-inter font-medium 
+           hover:bg-higame-red hover:text-white hover:shadow-glow-purple transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 }
 
-/* ==========================================================
-   TIPOGRAFIA PIXELADA (H1, Titulos, etc)
-========================================================== */
-h1, h2, h3, h4, .font-tetris {
-  font-family: 'Press Start 2P', cursive;
-  line-height: 1.5;
-  text-transform: uppercase;
+/* Tipografia Base para Títulos */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-outfit tracking-tight;
 }
