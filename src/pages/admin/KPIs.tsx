@@ -10,6 +10,14 @@ const TOAST_STYLE = { background: '#12121F', border: '1px solid #2A2A45', color:
 const TIERS: KpiTier[] = ['gold', 'silver', 'bronze', 'out']
 const TIER_LABELS: Record<KpiTier, string> = { gold: '🥇 Ouro', silver: '🥈 Prata', bronze: '🥉 Bronze', out: '❌ Fora da Meta' }
 const TIER_XP_DEFAULT: Record<KpiTier, number> = { gold: 100, silver: 70, bronze: 40, out: 0 }
+const FIELD_CLASS = [
+  'w-full rounded-xl border border-higame-border bg-slate-900/80 px-3 py-2.5',
+  'text-sm font-inter text-higame-text placeholder:text-higame-muted/60 outline-none',
+  'transition-all duration-200 focus:border-higame-purple/60 focus:ring-2',
+  'focus:ring-higame-purple/20 disabled:cursor-not-allowed disabled:opacity-60',
+].join(' ')
+const COMPACT_FIELD_CLASS = `${FIELD_CLASS} py-2 text-xs`
+const LABEL_CLASS = 'block mb-1.5 text-xs font-inter font-semibold text-higame-muted'
 
 export default function AdminKPIs() {
   const [seasons, setSeasons] = useState<Season[]>([])
@@ -115,9 +123,9 @@ export default function AdminKPIs() {
       <PageHeader title="Configuração de KPIs" subtitle="Defina os KPIs e suas faixas de desempenho por temporada" />
 
       {/* Seletor de temporada */}
-      <div className="flex gap-3 items-center">
+      <div className="flex flex-wrap gap-3 items-center">
         <label className="input-label whitespace-nowrap mb-0">Temporada:</label>
-        <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className="input-field max-w-xs">
+        <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={`${FIELD_CLASS} max-w-xs`}>
           {seasons.map(s => <option key={s.id} value={s.id}>{s.name} ({s.status})</option>)}
         </select>
         <button onClick={addKpi} className="btn-primary flex items-center gap-2 whitespace-nowrap">
@@ -136,30 +144,30 @@ export default function AdminKPIs() {
           {kpis.map(kpi => (
             <GlassCard key={kpi.id} className="overflow-hidden">
               {/* Header do KPI */}
-              <div className="p-4 flex items-center gap-3">
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-5 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="input-label">Nome</label>
-                    <input value={kpi.name} onChange={e => updateKpi(kpi.id, 'name', e.target.value)} className="input-field py-2 text-sm" />
+                    <label className={LABEL_CLASS}>Nome</label>
+                    <input value={kpi.name} onChange={e => updateKpi(kpi.id, 'name', e.target.value)} className={FIELD_CLASS} />
                   </div>
                   <div>
-                    <label className="input-label">Tipo</label>
-                    <select value={kpi.type} onChange={e => updateKpi(kpi.id, 'type', e.target.value)} className="input-field py-2 text-sm">
+                    <label className={LABEL_CLASS}>Tipo</label>
+                    <select value={kpi.type} onChange={e => updateKpi(kpi.id, 'type', e.target.value)} className={FIELD_CLASS}>
                       <option value="number">Número</option>
                       <option value="time">Tempo (HH:MM:SS)</option>
                       <option value="percent">Percentual (%)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="input-label">Unidade (ex: atend.)</label>
-                    <input value={kpi.unit ?? ''} onChange={e => updateKpi(kpi.id, 'unit', e.target.value)} className="input-field py-2 text-sm" placeholder="Opcional" />
+                    <label className={LABEL_CLASS}>Unidade (ex: atend.)</label>
+                    <input value={kpi.unit ?? ''} onChange={e => updateKpi(kpi.id, 'unit', e.target.value)} className={FIELD_CLASS} placeholder="Opcional" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 mt-4">
-                  <button onClick={() => setExpandedKpi(expandedKpi === kpi.id ? null : kpi.id)} className="btn-ghost p-2">
+                <div className="flex items-center gap-2 justify-end">
+                  <button onClick={() => setExpandedKpi(expandedKpi === kpi.id ? null : kpi.id)} className="btn-ghost p-2" title={expandedKpi === kpi.id ? 'Recolher faixas' : 'Expandir faixas'}>
                     {expandedKpi === kpi.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
-                  <button onClick={() => deleteKpi(kpi.id)} className="btn-ghost p-2 text-higame-danger hover:bg-higame-danger/10">
+                  <button onClick={() => deleteKpi(kpi.id)} className="btn-ghost p-2 text-higame-danger hover:bg-higame-danger/10" title="Remover KPI">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -175,7 +183,7 @@ export default function AdminKPIs() {
                     className="border-t border-higame-border overflow-hidden"
                   >
                     <div className="p-4 space-y-3 bg-higame-surface2/30">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
                         <p className="text-sm font-outfit font-semibold text-higame-text">Faixas de Desempenho</p>
                         <label className="flex items-center gap-2 text-xs font-inter text-higame-muted">
                           <input type="checkbox" checked={rules[kpi.id]?.[0]?.lower_is_better ?? false}
@@ -192,17 +200,17 @@ export default function AdminKPIs() {
                         if (!rule) return null
                         const isTime = kpi.type === 'time'
                         return (
-                          <div key={tier} className={`p-3 rounded-xl border ${
+                          <div key={tier} className={`p-4 rounded-xl border ${
                             tier === 'gold' ? 'border-higame-gold/30 bg-higame-gold/5' :
                             tier === 'silver' ? 'border-higame-silver/30 bg-higame-silver/5' :
                             tier === 'bronze' ? 'border-higame-bronze/30 bg-higame-bronze/5' :
                             'border-higame-danger/30 bg-higame-danger/5'
                           }`}>
-                            <div className="flex flex-wrap items-center gap-3">
-                              <span className="text-sm font-outfit font-bold w-24">{TIER_LABELS[tier]}</span>
-                              <div className="flex items-center gap-2 flex-wrap">
+                            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(120px,150px)_1fr] lg:items-center">
+                              <span className="text-sm font-outfit font-bold text-higame-text">{TIER_LABELS[tier]}</span>
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 <div>
-                                  <label className="input-label text-[10px]">Mín {isTime ? '(HH:MM:SS)' : ''}</label>
+                                  <label className={`${LABEL_CLASS} text-[10px]`}>Mín {isTime ? '(HH:MM:SS)' : ''}</label>
                                   <input
                                     type={isTime ? 'text' : 'number'}
                                     placeholder={isTime ? '00:00:00' : '0'}
@@ -216,11 +224,11 @@ export default function AdminKPIs() {
                                         updateRule(kpi.id, tier, 'min_value', e.target.value === '' ? null : Number(e.target.value))
                                       }
                                     }}
-                                    className="input-field py-1.5 w-28 text-xs"
+                                    className={COMPACT_FIELD_CLASS}
                                   />
                                 </div>
                                 <div>
-                                  <label className="input-label text-[10px]">Máx {isTime ? '(HH:MM:SS)' : ''}</label>
+                                  <label className={`${LABEL_CLASS} text-[10px]`}>Máx {isTime ? '(HH:MM:SS)' : ''}</label>
                                   <input
                                     type={isTime ? 'text' : 'number'}
                                     placeholder={isTime ? '00:00:00' : '∞'}
@@ -234,16 +242,16 @@ export default function AdminKPIs() {
                                         updateRule(kpi.id, tier, 'max_value', e.target.value === '' ? null : Number(e.target.value))
                                       }
                                     }}
-                                    className="input-field py-1.5 w-28 text-xs"
+                                    className={COMPACT_FIELD_CLASS}
                                   />
                                 </div>
                                 <div>
-                                  <label className="input-label text-[10px]">XP</label>
+                                  <label className={`${LABEL_CLASS} text-[10px]`}>XP</label>
                                   <input
                                     type="number"
                                     value={rule.xp_reward}
                                     onChange={e => updateRule(kpi.id, tier, 'xp_reward', Number(e.target.value))}
-                                    className="input-field py-1.5 w-16 text-xs"
+                                    className={COMPACT_FIELD_CLASS}
                                   />
                                 </div>
                               </div>

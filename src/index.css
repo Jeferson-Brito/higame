@@ -76,6 +76,14 @@
            text-sm font-inter text-higame-text placeholder:text-higame-muted/60 outline-none
            transition-all duration-200 focus:border-higame-purple/60 focus:ring-2
            focus:ring-higame-purple/20 disabled:cursor-not-allowed disabled:opacity-60;
+    color-scheme: dark;
+    background-color: rgba(30, 41, 59, 0.88);
+    color: #f8fafc;
+  }
+
+  .input-field option {
+    background-color: #0f172a;
+    color: #f8fafc;
   }
 
   /* ==========================================================
