@@ -22,6 +22,20 @@ const EMPTY_FORM: EmployeeForm = {
   full_name: '', email: '', password: '', position: '', team: '', role: 'employee'
 }
 
+async function getFunctionErrorMessage(error: unknown) {
+  const context = (error as { context?: Response }).context
+  if (context) {
+    try {
+      const body = await context.clone().json()
+      if (body?.error) return String(body.error)
+    } catch {
+      // Mantém fallback abaixo.
+    }
+  }
+
+  return (error as Error).message ?? 'Erro ao criar colaborador'
+}
+
 export default function AdminEmployees() {
   const [employees, setEmployees] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,24 +74,32 @@ export default function AdminEmployees() {
         if (error) throw error
         toast.success('Colaborador atualizado!', { style: TOAST_STYLE })
       } else {
-        // Criar novo via Supabase Admin Auth
         if (!form.email || !form.password) return toast.error('Email e senha obrigatórios', { style: TOAST_STYLE })
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: form.email,
-          password: form.password,
-          options: {
-            data: { full_name: form.full_name, role: form.role }
-          }
-        })
-        if (authError) throw authError
-        if (authData.user) {
-          await supabase.from('profiles').update({
-            position: form.position,
-            team: form.team,
-            role: form.role,
-          }).eq('id', authData.user.id)
+
+        const { data: sessionData } = await supabase.auth.getSession()
+        const accessToken = sessionData.session?.access_token
+
+        if (!accessToken) {
+          throw new Error('Sessão expirada. Faça login novamente.')
         }
-        toast.success('Colaborador criado! Verifique o email.', { style: TOAST_STYLE })
+
+        const { error: functionError } = await supabase.functions.invoke('create-employee', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: {
+            full_name: form.full_name.trim(),
+            email: form.email.trim(),
+            password: form.password,
+            position: form.position.trim(),
+            team: form.team.trim(),
+            role: form.role,
+          },
+        })
+
+        if (functionError) {
+          throw new Error(await getFunctionErrorMessage(functionError))
+        }
+
+        toast.success('Colaborador criado! Login liberado.', { style: TOAST_STYLE })
       }
       setShowForm(false)
       setEditingId(null)

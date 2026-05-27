@@ -54,7 +54,17 @@ npm install
    - `database/migrations/004_security_and_gamification_rls.sql`
    - `database/seed.sql`
 
-### 3. Configure as variáveis de ambiente
+### 3. Publique a Edge Function de usuários
+
+O painel admin usa a função `create-employee` para criar usuários já confirmados no Supabase Auth. Sem ela, colaboradores criados pelo painel podem não conseguir fazer login.
+
+```bash
+supabase functions deploy create-employee
+```
+
+No Supabase, confirme que a função possui acesso às variáveis `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`.
+
+### 4. Configure as variáveis de ambiente
 
 ```bash
 cp .env.example .env
@@ -67,7 +77,7 @@ VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### 4. Rode localmente
+### 5. Rode localmente
 
 ```bash
 npm run dev
@@ -141,6 +151,9 @@ database/
 │   ├── 003_gamification.sql
 │   └── 004_security_and_gamification_rls.sql
 └── seed.sql
+supabase/
+└── functions/
+    └── create-employee/
 ```
 
 ---
