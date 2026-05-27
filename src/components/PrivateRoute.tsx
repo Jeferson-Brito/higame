@@ -26,6 +26,10 @@ export function PrivateRoute({ children, requiredRole }: PrivateRouteProps) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+  if (!profile) {
+    return <Navigate to="/login" replace />
+  }
+
   if (requiredRole && profile?.role !== requiredRole) {
     // Redireciona admin para /admin, employee para /dashboard
     const redirectTo = profile?.role === 'admin' ? '/admin' : '/dashboard'

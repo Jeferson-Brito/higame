@@ -3,10 +3,6 @@ import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile, UserRole } from '@/types'
 
-// ============================================================
-// Tipos do contexto
-// ============================================================
-
 interface AuthContextType {
   user: User | null
   session: Session | null
@@ -19,15 +15,29 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>
 }
 
-// ============================================================
-// Contexto
-// ============================================================
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// ============================================================
-// Provider
-// ============================================================
+function clearSupabaseAuthStorage() {
+  if (typeof window === 'undefined') return
+
+  const clearFromStorage = (storage: Storage) => {
+    for (let i = storage.length - 1; i >= 0; i -= 1) {
+      const key = storage.key(i)
+      if (!key) continue
+
+      if (key.startsWith('sb-') && (key.includes('auth-token') || key.includes('code-verifier'))) {
+        storage.removeItem(key)
+      }
+    }
+  }
+
+  try {
+    clearFromStorage(window.localStorage)
+    clearFromStorage(window.sessionStorage)
+  } catch (err) {
+    console.warn('Não foi possível limpar a sessão local do Supabase:', err)
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -35,66 +45,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const clearAuthState = useCallback(() => {
+    setUser(null)
+    setSession(null)
+    setProfile(null)
+    clearSupabaseAuthStorage()
+  }, [])
+
+  const forceSignOut = useCallback(async () => {
+    clearAuthState()
+
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
+    } catch (err) {
+      console.warn('Erro ao encerrar sessão local:', err)
+      clearSupabaseAuthStorage()
+    }
+  }, [clearAuthState])
+
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('Erro ao buscar perfil:', error)
-        setProfile(null)
-        // Se o usuário existe na sessão mas não tem perfil (fantasma), forçar logout
-        await supabase.auth.signOut()
-      } else if (!data) {
-        setProfile(null)
-        await supabase.auth.signOut()
-      } else {
-        setProfile(data as Profile)
+        await forceSignOut()
+        return null
       }
+
+      if (!data || data.deleted_at || !data.is_active) {
+        await forceSignOut()
+        return null
+      }
+
+      const nextProfile = data as Profile
+      setProfile(nextProfile)
+      return nextProfile
     } catch (err) {
       console.error('Erro inesperado ao buscar perfil:', err)
-      setProfile(null)
-      await supabase.auth.signOut()
+      await forceSignOut()
+      return null
     }
-  }, [])
+  }, [forceSignOut])
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) await fetchProfile(user.id)
   }, [user, fetchProfile])
 
   useEffect(() => {
-    // Timeout de segurança: forçar carregamento a terminar após 8 segundos se algo der errado
     const timeoutId = setTimeout(() => {
       setIsLoading(false)
     }, 8000)
 
-    // Inicializar: obter sessão atual
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setIsLoading(false))
-      } else {
-        setIsLoading(false)
-      }
-    }).catch(err => {
-      console.error('Erro no getSession:', err)
-      setIsLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (session?.user) {
+          const nextProfile = await fetchProfile(session.user.id)
 
-    // Escutar mudanças de autenticação
+          if (nextProfile) {
+            setSession(session)
+            setUser(session.user)
+          }
+        } else {
+          clearAuthState()
+        }
+
+        setIsLoading(false)
+      })
+      .catch(err => {
+        console.error('Erro no getSession:', err)
+        clearAuthState()
+        setIsLoading(false)
+      })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-
         if (session?.user) {
-          await fetchProfile(session.user.id)
+          const nextProfile = await fetchProfile(session.user.id)
+
+          if (nextProfile) {
+            setSession(session)
+            setUser(session.user)
+          }
         } else {
-          setProfile(null)
+          clearAuthState()
         }
 
         setIsLoading(false)
@@ -105,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
-  }, [fetchProfile])
+  }, [clearAuthState, fetchProfile])
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -113,8 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setProfile(null)
+    await forceSignOut()
   }
 
   const value: AuthContextType = {
@@ -131,10 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-
-// ============================================================
-// Hook
-// ============================================================
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
