@@ -46,12 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Erro ao buscar perfil:', error)
         setProfile(null)
+        // Se o usuário existe na sessão mas não tem perfil (fantasma), forçar logout
+        await supabase.auth.signOut()
+      } else if (!data) {
+        setProfile(null)
+        await supabase.auth.signOut()
       } else {
         setProfile(data as Profile)
       }
     } catch (err) {
       console.error('Erro inesperado ao buscar perfil:', err)
       setProfile(null)
+      await supabase.auth.signOut()
     }
   }, [])
 
