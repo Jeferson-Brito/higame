@@ -20,13 +20,6 @@ const TIER_CARD_CLASSES: Record<KpiTier, string> = {
   out:    'kpi-card-out',
 }
 
-const TIER_ICON_CLASSES: Record<KpiTier, string> = {
-  gold:   'text-higame-gold',
-  silver: 'text-higame-silver',
-  bronze: 'text-higame-bronze',
-  out:    'text-higame-danger',
-}
-
 const TIER_VALUE_CLASSES: Record<KpiTier, string> = {
   gold:   'text-higame-gold',
   silver: 'text-higame-silver',

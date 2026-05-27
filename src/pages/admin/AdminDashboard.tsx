@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { GlassCard, PageHeader, RankBadge, Skeleton } from '@/components/ui/index'
+import { GlassCard, PageHeader, Skeleton } from '@/components/ui/index'
 import type { Season } from '@/types'
 import { BarChart3, Users, Zap, Trophy } from 'lucide-react'
+
+interface TopRankingRow {
+  total_xp: number
+  profile: { full_name: string } | { full_name: string }[] | null
+}
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ employees: 0, activeSeason: null as Season | null, rankingCount: 0, topEmployee: null as { full_name: string; total_xp: number } | null })
@@ -24,8 +29,11 @@ export default function AdminDashboard() {
           const { count } = await supabase.from('rankings').select('id', { count: 'exact' }).eq('season_id', activeSeason.id)
           rankingCount = count ?? 0
           const { data: topData } = await supabase.from('rankings').select('total_xp, profile:profiles(full_name)').eq('season_id', activeSeason.id).order('total_xp', { ascending: false }).limit(1).single()
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (topData) topEmployee = { full_name: (topData as any).profile?.full_name ?? '—', total_xp: (topData as any).total_xp }
+          if (topData) {
+            const topRow = topData as TopRankingRow
+            const profile = Array.isArray(topRow.profile) ? topRow.profile[0] : topRow.profile
+            topEmployee = { full_name: profile?.full_name ?? '—', total_xp: topRow.total_xp }
+          }
         }
         
         setStats({ employees: empData.count ?? 0, activeSeason, rankingCount, topEmployee })

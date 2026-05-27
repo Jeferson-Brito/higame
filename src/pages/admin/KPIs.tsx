@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, EmptyState } from '@/components/ui/index'
 import type { Season, KpiDefinition, KpiRule, KpiTier, KpiType } from '@/types'
@@ -20,21 +20,7 @@ export default function AdminKPIs() {
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null)
   const [savingRules, setSavingRules] = useState(false)
 
-  useEffect(() => {
-    supabase.from('seasons').select('*').is('deleted_at', null).neq('status', 'closed')
-      .order('year', { ascending: false }).then(({ data }) => {
-        const s = (data ?? []) as Season[]
-        setSeasons(s)
-        const active = s.find(x => x.status === 'active') ?? s[0]
-        if (active) setSelectedSeason(active.id)
-      })
-  }, [])
-
-  useEffect(() => {
-    if (selectedSeason) fetchKpisAndRules()
-  }, [selectedSeason])
-
-  async function fetchKpisAndRules() {
+  const fetchKpisAndRules = useCallback(async () => {
     setLoading(true)
     const { data: kpiData } = await supabase.from('kpi_definitions').select('*').eq('season_id', selectedSeason).is('deleted_at', null).order('display_order')
     const kpiList = (kpiData ?? []) as KpiDefinition[]
@@ -47,7 +33,21 @@ export default function AdminKPIs() {
     }
     setRules(rulesMap)
     setLoading(false)
-  }
+  }, [selectedSeason])
+
+  useEffect(() => {
+    supabase.from('seasons').select('*').is('deleted_at', null).neq('status', 'closed')
+      .order('year', { ascending: false }).then(({ data }) => {
+        const s = (data ?? []) as Season[]
+        setSeasons(s)
+        const active = s.find(x => x.status === 'active') ?? s[0]
+        if (active) setSelectedSeason(active.id)
+      })
+  }, [])
+
+  useEffect(() => {
+    if (selectedSeason) void fetchKpisAndRules()
+  }, [selectedSeason, fetchKpisAndRules])
 
   async function addKpi() {
     const order = kpis.length
@@ -69,7 +69,7 @@ export default function AdminKPIs() {
       min_value: null, max_value: null, min_seconds: null, max_seconds: null, lower_is_better: false
     }))
     await supabase.from('kpi_rules').insert(defaultRules)
-    fetchKpisAndRules()
+    await fetchKpisAndRules()
   }
 
   async function updateKpi(id: string, field: keyof KpiDefinition, value: string | number | boolean) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, EmptyState, StatusDot, ConfirmModal } from '@/components/ui/index'
 import type { Season } from '@/types'
@@ -17,30 +17,41 @@ interface SeasonForm {
   description: string
 }
 
+function getDefaultSeasonForm(): SeasonForm {
+  const now = new Date()
+  const month = now.getMonth() + 1
+  const year = now.getFullYear()
+  return { name: `${MONTH_NAMES[month]} ${year}`, month, year, description: '' }
+}
+
+function buildSeasonName(month: number, year: number) {
+  return `${MONTH_NAMES[month]} ${year}`
+}
+
 export default function AdminSeasons() {
   const [seasons, setSeasons] = useState<Season[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<SeasonForm>({ name: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), description: '' })
+  const [form, setForm] = useState<SeasonForm>(getDefaultSeasonForm)
   const [saving, setSaving] = useState(false)
   const [confirmClose, setConfirmClose] = useState<Season | null>(null)
   const [closing, setClosing] = useState(false)
 
-  useEffect(() => { fetchSeasons() }, [])
-
-  // Auto-fill nome ao mudar mês/ano
-  useEffect(() => {
-    if (!editingId) {
-      setForm(f => ({ ...f, name: `${MONTH_NAMES[f.month]} ${f.year}` }))
-    }
-  }, [form.month, form.year, editingId])
-
-  async function fetchSeasons() {
+  const fetchSeasons = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase.from('seasons').select('*').is('deleted_at', null).order('year', { ascending: false }).order('month', { ascending: false })
     setSeasons((data ?? []) as Season[])
     setLoading(false)
+  }, [])
+
+  useEffect(() => { void fetchSeasons() }, [fetchSeasons])
+
+  function updatePeriod(field: 'month' | 'year', value: number) {
+    setForm(current => {
+      const next = { ...current, [field]: value }
+      return editingId ? next : { ...next, name: buildSeasonName(next.month, next.year) }
+    })
   }
 
   async function handleSave() {
@@ -62,7 +73,7 @@ export default function AdminSeasons() {
       }
       setShowForm(false)
       setEditingId(null)
-      fetchSeasons()
+      await fetchSeasons()
     } catch (err: unknown) {
       toast.error((err as Error).message ?? 'Erro ao salvar', { style: TOAST_STYLE })
     } finally {
@@ -76,7 +87,7 @@ export default function AdminSeasons() {
       await supabase.from('seasons').update({ status: 'draft' }).eq('status', 'active')
       await supabase.from('seasons').update({ status: 'active', started_at: new Date().toISOString() }).eq('id', season.id)
       toast.success(`Temporada "${season.name}" ativada!`, { style: TOAST_STYLE })
-      fetchSeasons()
+      await fetchSeasons()
     } catch {
       toast.error('Erro ao ativar temporada', { style: TOAST_STYLE })
     }
@@ -88,7 +99,7 @@ export default function AdminSeasons() {
       await closeSeasonAndSnapshot(season.id)
       toast.success(`Temporada "${season.name}" encerrada com snapshot gerado!`, { style: TOAST_STYLE })
       setConfirmClose(null)
-      fetchSeasons()
+      await fetchSeasons()
     } catch (err: unknown) {
       toast.error((err as Error).message ?? 'Erro ao encerrar', { style: TOAST_STYLE })
     } finally {
@@ -108,7 +119,7 @@ export default function AdminSeasons() {
         title="Temporadas"
         subtitle="Gerencie as temporadas de gamificação"
         action={
-          <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), description: '' }) }} className="btn-primary flex items-center gap-2">
+          <button onClick={() => { setShowForm(true); setEditingId(null); setForm(getDefaultSeasonForm()) }} className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" /> Nova
           </button>
         }
@@ -182,13 +193,13 @@ export default function AdminSeasons() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="input-label">Mês</label>
-                <select value={form.month} onChange={e => setForm(f => ({ ...f, month: Number(e.target.value) }))} className="input-field">
+                <select value={form.month} onChange={e => updatePeriod('month', Number(e.target.value))} className="input-field">
                   {MONTH_NAMES.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
                 </select>
               </div>
               <div>
                 <label className="input-label">Ano</label>
-                <select value={form.year} onChange={e => setForm(f => ({ ...f, year: Number(e.target.value) }))} className="input-field">
+                <select value={form.year} onChange={e => updatePeriod('year', Number(e.target.value))} className="input-field">
                   {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>

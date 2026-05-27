@@ -7,6 +7,9 @@ export type UserRole = 'admin' | 'employee'
 export type SeasonStatus = 'draft' | 'active' | 'closed'
 export type KpiTier = 'gold' | 'silver' | 'bronze' | 'out'
 export type KpiType = 'time' | 'number' | 'percent'
+export type RarityTier = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic'
+export type QuestFrequency = 'daily' | 'weekly' | 'season' | 'one_shot'
+export type StoreItemType = 'frame' | 'banner' | 'title' | 'real_reward'
 
 // ============================================================
 // Entidades do banco
@@ -19,6 +22,13 @@ export interface Profile {
   avatar_url: string | null
   position: string | null
   team: string | null
+  current_streak: number
+  longest_streak: number
+  last_login: string | null
+  coins_balance: number
+  active_title_id: string | null
+  active_frame_id: string | null
+  active_banner_id: string | null
   is_active: boolean
   deleted_at: string | null
   created_at: string
@@ -126,6 +136,68 @@ export interface AppSetting {
   value: unknown
   description: string | null
   updated_at: string
+}
+
+export interface Badge {
+  id: string
+  name: string
+  description: string | null
+  icon: string
+  rarity: RarityTier
+  xp_reward: number
+  coin_reward: number
+  condition_type: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface EmployeeBadge {
+  id: string
+  employee_id: string
+  badge_id: string
+  unlocked_at: string
+}
+
+export interface Quest {
+  id: string
+  name: string
+  description: string | null
+  frequency: QuestFrequency
+  xp_reward: number
+  coin_reward: number
+  target_value: number
+  is_active: boolean
+  created_at: string
+}
+
+export interface EmployeeQuest {
+  id: string
+  employee_id: string
+  quest_id: string
+  progress: number
+  completed: boolean
+  completed_at: string | null
+  reset_at: string | null
+  created_at: string
+}
+
+export interface StoreItem {
+  id: string
+  name: string
+  description: string | null
+  type: StoreItemType
+  rarity: RarityTier
+  price_coins: number
+  asset_url: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface EmployeePurchase {
+  id: string
+  employee_id: string
+  item_id: string
+  purchased_at: string
 }
 
 // ============================================================

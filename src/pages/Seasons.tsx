@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { GlassCard, PageHeader, EmptyState, Skeleton, TierBadge } from '@/components/ui/index'
 import { MONTH_NAMES } from '@/types'
-import { History, Trophy, Star, TrendingUp } from 'lucide-react'
+import { History, Star, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { KpiTier } from '@/types'
 
@@ -27,25 +27,30 @@ export default function Seasons() {
   const { profile } = useAuth()
   const [snapshots, setSnapshots] = useState<SnapshotEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const profileId = profile?.id
 
-  useEffect(() => {
-    if (!profile?.id) return
-    fetchHistory()
-  }, [profile?.id])
+  const fetchHistory = useCallback(async () => {
+    if (!profileId) {
+      setLoading(false)
+      return
+    }
 
-  async function fetchHistory() {
     setLoading(true)
     try {
       const { data } = await supabase
         .from('season_snapshots')
         .select('*, season:seasons(id, name, month, year)')
-        .eq('employee_id', profile!.id)
+        .eq('employee_id', profileId)
         .order('created_at', { ascending: false })
       setSnapshots((data ?? []) as SnapshotEntry[])
     } finally {
       setLoading(false)
     }
-  }
+  }, [profileId])
+
+  useEffect(() => {
+    void fetchHistory()
+  }, [fetchHistory])
 
   if (loading) return <Skeleton className="h-96 w-full" />
 

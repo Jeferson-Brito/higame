@@ -1,17 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, RankBadge, EmptyState, Skeleton } from '@/components/ui/index'
 import type { Season } from '@/types'
-import { BarChart3, Zap, Star } from 'lucide-react'
+import { BarChart3, Zap } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+
+interface AdminRankingEntry {
+  id: string
+  rank_position: number | null
+  total_xp: number
+  total_score: number
+  profile: { full_name: string; position: string | null; avatar_url: string | null }
+}
 
 export default function AdminRanking() {
   const [seasons, setSeasons] = useState<Season[]>([])
   const [selectedSeason, setSelectedSeason] = useState<string>('')
-  const [rankings, setRankings] = useState<Array<{
-    id: string; rank_position: number | null; total_xp: number; total_score: number;
-    profile: { full_name: string; position: string | null; avatar_url: string | null }
-  }>>([])
+  const [rankings, setRankings] = useState<AdminRankingEntry[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -23,19 +28,28 @@ export default function AdminRanking() {
     })
   }, [])
 
-  useEffect(() => {
-    if (!selectedSeason) return
+  const fetchRankings = useCallback(async () => {
+    if (!selectedSeason) {
+      setRankings([])
+      return
+    }
+
     setLoading(true)
-    supabase.from('rankings').select('*, profile:profiles(full_name, position, avatar_url)')
+    const { data } = await supabase.from('rankings').select('*, profile:profiles(full_name, position, avatar_url)')
       .eq('season_id', selectedSeason).order('rank_position', { ascending: true })
-      .then(({ data }) => { setRankings((data ?? []) as typeof rankings); setLoading(false) })
+    setRankings((data ?? []) as AdminRankingEntry[])
+    setLoading(false)
   }, [selectedSeason])
+
+  useEffect(() => {
+    void fetchRankings()
+  }, [fetchRankings])
 
   const selectedSeasonObj = seasons.find(s => s.id === selectedSeason)
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader title="Ranking Admin" subtitle="Classificação de todas as temporadas" />
+      <PageHeader title="Ranking Admin" subtitle={selectedSeasonObj ? `Classificação de ${selectedSeasonObj.name}` : 'Classificação de todas as temporadas'} />
       <div className="flex gap-3 items-center">
         <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className="input-field max-w-xs">
           {seasons.map(s => <option key={s.id} value={s.id}>{s.name} ({s.status})</option>)}

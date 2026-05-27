@@ -55,6 +55,29 @@
     @apply bg-white/5 animate-pulse rounded-lg;
   }
 
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .input-label {
+    @apply block mb-1.5 text-xs font-inter font-semibold text-higame-muted;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl bg-higame-surface2 border border-higame-border px-3 py-2.5
+           text-sm font-inter text-higame-text placeholder:text-higame-muted/60 outline-none
+           transition-all duration-200 focus:border-higame-purple/60 focus:ring-2
+           focus:ring-higame-purple/20 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
   /* ==========================================================
      BOTÕES (GAMER/SAAS)
   ========================================================== */
@@ -71,6 +94,62 @@
   .btn-danger {
     @apply flex items-center justify-center gap-2 px-4 py-2 bg-higame-red/10 border border-higame-red/20 text-higame-red rounded-xl font-inter font-medium 
            hover:bg-higame-red hover:text-white hover:shadow-glow-purple transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl text-higame-muted
+           hover:text-higame-text hover:bg-higame-surface2 transition-all duration-200
+           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* ==========================================================
+     TIERS & KPI CARDS
+  ========================================================== */
+  .tier-badge-gold,
+  .tier-badge-silver,
+  .tier-badge-bronze,
+  .tier-badge-out {
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-1
+           text-xs font-outfit font-bold whitespace-nowrap;
+  }
+
+  .tier-badge-gold {
+    @apply border-higame-gold/35 bg-higame-gold/10 text-higame-gold;
+  }
+
+  .tier-badge-silver {
+    @apply border-higame-silver/35 bg-higame-silver/10 text-higame-silver;
+  }
+
+  .tier-badge-bronze {
+    @apply border-higame-bronze/35 bg-higame-bronze/10 text-higame-bronze;
+  }
+
+  .tier-badge-out {
+    @apply border-higame-danger/35 bg-higame-danger/10 text-higame-danger;
+  }
+
+  .kpi-card-gold,
+  .kpi-card-silver,
+  .kpi-card-bronze,
+  .kpi-card-out {
+    @apply glass-card border;
+  }
+
+  .kpi-card-gold {
+    @apply border-higame-gold/30 bg-higame-gold/5 shadow-glow-gold;
+  }
+
+  .kpi-card-silver {
+    @apply border-higame-silver/30 bg-higame-silver/5 shadow-glow-silver;
+  }
+
+  .kpi-card-bronze {
+    @apply border-higame-bronze/30 bg-higame-bronze/5 shadow-glow-bronze;
+  }
+
+  .kpi-card-out {
+    @apply border-higame-danger/25 bg-higame-danger/5;
   }
 }
 

@@ -24,7 +24,7 @@ O **HIGAME** transforma KPIs operacionais em um sistema gamificado competitivo e
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Frontend | React 18 + Vite 5 + TypeScript |
+| Frontend | React 19 + Vite 8 + TypeScript 6 |
 | Estilos | TailwindCSS v3 |
 | Banco | Supabase (PostgreSQL) |
 | Auth | Supabase Auth |
@@ -50,6 +50,8 @@ npm install
 2. No **SQL Editor**, execute em ordem:
    - `database/migrations/001_initial_schema.sql`
    - `database/migrations/002_rls_policies.sql`
+   - `database/migrations/003_gamification.sql`
+   - `database/migrations/004_security_and_gamification_rls.sql`
    - `database/seed.sql`
 
 ### 3. Configure as variáveis de ambiente
@@ -135,7 +137,9 @@ src/
 database/
 ├── migrations/
 │   ├── 001_initial_schema.sql
-│   └── 002_rls_policies.sql
+│   ├── 002_rls_policies.sql
+│   ├── 003_gamification.sql
+│   └── 004_security_and_gamification_rls.sql
 └── seed.sql
 ```
 

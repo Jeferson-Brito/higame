@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, Skeleton, RankBadge, EmptyState, PageHeader } from '@/components/ui/index'
-import { TierBadge } from '@/components/ui/index'
 import { getInitials } from '@/lib/utils'
 import type { Season, KpiTier } from '@/types'
-import { Trophy, Zap, Star, TrendingUp } from 'lucide-react'
+import { Trophy, Zap, Star } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface RankingEntry {
@@ -30,11 +29,7 @@ export default function Ranking() {
   const [rankings, setRankings] = useState<RankingEntry[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchRanking()
-  }, [])
-
-  async function fetchRanking() {
+  const fetchRanking = useCallback(async () => {
     setLoading(true)
     try {
       const { data: seasonData } = await supabase
@@ -53,10 +48,13 @@ export default function Ranking() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    void fetchRanking()
+  }, [fetchRanking])
 
   const top3 = rankings.slice(0, 3)
-  const rest = rankings.slice(3)
 
   const podiumOrder = top3.length === 3
     ? [top3[1], top3[0], top3[2]]  // pódio: 2º | 1º | 3º

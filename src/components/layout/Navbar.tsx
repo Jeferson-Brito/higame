@@ -5,11 +5,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
-interface NavbarProps {
-  sidebarCollapsed: boolean
-}
-
-export function Navbar({ sidebarCollapsed }: NavbarProps) {
+export function Navbar() {
   const { profile, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()

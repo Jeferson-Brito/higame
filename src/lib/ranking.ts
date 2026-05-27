@@ -171,14 +171,16 @@ export async function recalculateEmployeeRanking(
 async function recalculateRankPositions(seasonId: string): Promise<void> {
   const { data: allRankings, error } = await supabase
     .from('rankings')
-    .select('id, total_xp')
+    .select('id, total_xp, total_score, updated_at')
     .eq('season_id', seasonId)
     .order('total_xp', { ascending: false })
+    .order('total_score', { ascending: false })
+    .order('updated_at', { ascending: true })
 
   if (error) throw error
 
   // Atualizar posição de cada colaborador
-  const updates = allRankings.map((r: { id: string; total_xp: number }, index: number) => ({
+  const updates = allRankings.map((r: { id: string }, index: number) => ({
     id: r.id,
     rank_position: index + 1,
   }))
@@ -216,7 +218,22 @@ export async function closeSeasonAndSnapshot(seasonId: string): Promise<void> {
       rank_position: number | null
       kpi_summary: Record<string, KpiTier> | null
     }) => {
-      const tiers = Object.values(ranking.kpi_summary ?? {}) as KpiTier[]
+      const { data: results, error: resultsError } = await supabase
+        .from('employee_results')
+        .select('kpi_id, tier, xp_earned, kpi:kpi_definitions(name)')
+        .eq('employee_id', ranking.employee_id)
+        .eq('season_id', seasonId)
+
+      if (resultsError) throw resultsError
+
+      const resultRows = (results ?? []) as Array<{
+        kpi_id: string
+        tier: KpiTier | null
+        xp_earned: number
+        kpi: { name: string } | { name: string }[] | null
+      }>
+      const tiers = resultRows.map(result => result.tier ?? 'out')
+      const baseXp = resultRows.reduce((sum, result) => sum + result.xp_earned, 0)
       const level = calculateLevel(ranking.total_xp, settings.xp_per_level)
 
       const prevSnapshot = await supabase
@@ -230,12 +247,21 @@ export async function closeSeasonAndSnapshot(seasonId: string): Promise<void> {
       const previousScore = prevSnapshot.data?.final_score ?? null
 
       const xpBreakdown: XpBreakdown = calculateXpWithMultipliers(
-        ranking.total_xp,
+        baseXp,
         tiers,
         previousScore,
         ranking.total_score,
         settings
       )
+      xpBreakdown.kpi_details = resultRows.map(result => {
+        const kpi = Array.isArray(result.kpi) ? result.kpi[0] : result.kpi
+        return {
+          kpi_id: result.kpi_id,
+          kpi_name: kpi?.name ?? 'KPI',
+          tier: result.tier ?? 'out',
+          xp_earned: result.xp_earned,
+        }
+      })
 
       return {
         season_id: seasonId,

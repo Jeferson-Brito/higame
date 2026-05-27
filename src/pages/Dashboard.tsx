@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useCallback, useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getAppSettings } from '@/lib/ranking'
@@ -42,15 +42,14 @@ export default function Dashboard() {
   const [ranking, setRanking] = useState<Ranking | null>(null)
   const [settings, setSettings] = useState<AppSettings | null>(null)
   
-  // States para animações de gamificação
-  const [showLevelUp, setShowLevelUp] = useState(false)
+  const profileId = profile?.id
 
-  useEffect(() => {
-    if (!profile?.id) return
-    fetchAll()
-  }, [profile?.id])
+  const fetchAll = useCallback(async () => {
+    if (!profileId) {
+      setLoading(false)
+      return
+    }
 
-  async function fetchAll() {
     setLoading(true)
     try {
       const [settingsData, seasonData] = await Promise.all([
@@ -60,12 +59,12 @@ export default function Dashboard() {
       setSettings(settingsData)
       const season = seasonData.data as Season | null
 
-      if (!season || !profile?.id) return
+      if (!season) return
 
       const rankingData = await supabase
         .from('rankings')
         .select('*')
-        .eq('employee_id', profile.id)
+        .eq('employee_id', profileId)
         .eq('season_id', season.id)
         .single()
 
@@ -75,10 +74,15 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [profileId])
+
+  useEffect(() => {
+    void fetchAll()
+  }, [fetchAll])
 
   const handleClaimQuest = (id: number) => {
-    toast.success('+50 XP Ganhos!', { icon: '✨' })
+    const quest = MOCK_QUESTS.find(item => item.id === id)
+    toast.success(`+${quest?.xp ?? 0} XP Ganhos!`, { icon: '✨' })
     // Aqui virá a lógica real de claim
   }
 

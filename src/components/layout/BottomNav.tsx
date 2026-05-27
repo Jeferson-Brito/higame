@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Trophy, History, User, Users, Calendar, Settings, BarChart3, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Trophy, History, User, Users, Calendar, BarChart3, ClipboardList } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 

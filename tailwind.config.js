@@ -11,10 +11,12 @@ export default {
           bg:       '#020617', // slate-950 (Fundo profundo)
           surface:  'rgba(15, 23, 42, 0.6)', // slate-900 translúcido
           surface2: 'rgba(30, 41, 59, 0.7)', // slate-800 translúcido
+          surface3: 'rgba(51, 65, 85, 0.72)', // slate-700 translúcido
           border:   'rgba(255, 255, 255, 0.08)', // Bordas hyper sutis
           border2:  'rgba(255, 255, 255, 0.15)',
           
           text:     '#F8FAFC', // slate-50
+          text2:    '#CBD5E1', // slate-300
           muted:    '#94A3B8', // slate-400
           
           // Cores Premium/Gamer (Discord/Linear/Arc)
@@ -58,8 +60,13 @@ export default {
         'glow-purple':  '0 0 20px rgba(124, 58, 237, 0.3)',
         'glow-neon':    '0 0 20px rgba(6, 182, 212, 0.3)',
         'glow-green':   '0 0 20px rgba(16, 185, 129, 0.3)',
+        'glow-gold':    '0 0 20px rgba(245, 158, 11, 0.32)',
+        'glow-silver':  '0 0 20px rgba(148, 163, 184, 0.28)',
+        'glow-bronze':  '0 0 20px rgba(205, 127, 50, 0.3)',
+        'glow-danger':  '0 0 20px rgba(239, 68, 68, 0.28)',
         'glass':        '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         'glass-hover':  '0 12px 40px 0 rgba(0, 0, 0, 0.5)',
+        'card':         '0 18px 48px rgba(0, 0, 0, 0.35)',
       },
       backdropBlur: {
         'glass': '16px',

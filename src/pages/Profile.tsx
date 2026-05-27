@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { GlassCard, PageHeader, TierBadge, Skeleton } from '@/components/ui/index'
@@ -17,12 +17,14 @@ export default function Profile() {
   const [editName, setEditName] = useState(false)
   const [newName, setNewName] = useState(profile?.full_name ?? '')
   const [saving, setSaving] = useState(false)
+  const profileId = profile?.id
 
-  useEffect(() => {
-    if (profile?.id) fetchData()
-  }, [profile?.id])
+  const fetchData = useCallback(async () => {
+    if (!profileId) {
+      setLoading(false)
+      return
+    }
 
-  async function fetchData() {
     setLoading(true)
     try {
       const settings = await getAppSettings()
@@ -34,8 +36,8 @@ export default function Profile() {
       if (!seasonData) return
 
       const [rankData, resultsData] = await Promise.all([
-        supabase.from('rankings').select('*').eq('employee_id', profile!.id).eq('season_id', seasonData.id).single(),
-        supabase.from('employee_results').select('*, kpi:kpi_definitions(*)').eq('employee_id', profile!.id).eq('season_id', seasonData.id),
+        supabase.from('rankings').select('*').eq('employee_id', profileId).eq('season_id', seasonData.id).single(),
+        supabase.from('employee_results').select('*, kpi:kpi_definitions(*)').eq('employee_id', profileId).eq('season_id', seasonData.id),
       ])
 
       setRanking(rankData.data as Ranking | null)
@@ -43,7 +45,11 @@ export default function Profile() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [profileId])
+
+  useEffect(() => {
+    void fetchData()
+  }, [fetchData])
 
   async function saveName() {
     if (!newName.trim() || !profile?.id) return

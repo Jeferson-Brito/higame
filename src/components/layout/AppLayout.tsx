@@ -16,11 +16,11 @@ export function AppLayout() {
       {/* Navbar */}
       <div style={{ paddingLeft: `${sidebarOffset}px` }} className="hidden lg:block transition-all duration-300 w-full fixed top-0 z-30">
         <div className="pt-4 pr-4">
-          <Navbar sidebarCollapsed={collapsed} />
+          <Navbar />
         </div>
       </div>
       <div className="lg:hidden w-full fixed top-0 z-30">
-        <Navbar sidebarCollapsed={false} />
+        <Navbar />
       </div>
 
       {/* Main Content */}

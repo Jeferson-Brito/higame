@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, EmptyState, TierBadge } from '@/components/ui/index'
 import type { Season, Profile, KpiDefinition, EmployeeResult } from '@/types'
 import { determineTier, recalculateEmployeeRanking } from '@/lib/ranking'
-import { formatDisplayValue, timeToSeconds } from '@/lib/utils'
 import { ClipboardList, Save, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -31,21 +30,7 @@ export default function AdminResults() {
   const [saving, setSaving] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    supabase.from('seasons').select('*').is('deleted_at', null).neq('status', 'closed')
-      .order('year', { ascending: false }).then(({ data }) => {
-        const s = (data ?? []) as Season[]
-        setSeasons(s)
-        const active = s.find(x => x.status === 'active') ?? s[0]
-        if (active) setSelectedSeason(active.id)
-      })
-  }, [])
-
-  useEffect(() => {
-    if (selectedSeason) fetchData()
-  }, [selectedSeason])
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const [empData, kpiData, resultData] = await Promise.all([
       supabase.from('profiles').select('*').eq('is_active', true).eq('role', 'employee').is('deleted_at', null).order('full_name'),
@@ -77,7 +62,21 @@ export default function AdminResults() {
     }
     setResults(valMap)
     setLoading(false)
-  }
+  }, [selectedSeason])
+
+  useEffect(() => {
+    supabase.from('seasons').select('*').is('deleted_at', null).neq('status', 'closed')
+      .order('year', { ascending: false }).then(({ data }) => {
+        const s = (data ?? []) as Season[]
+        setSeasons(s)
+        const active = s.find(x => x.status === 'active') ?? s[0]
+        if (active) setSelectedSeason(active.id)
+      })
+  }, [])
+
+  useEffect(() => {
+    if (selectedSeason) void fetchData()
+  }, [selectedSeason, fetchData])
 
   async function saveEmployeeResults(employeeId: string) {
     const employeeValues = results[employeeId] ?? {}
@@ -108,7 +107,7 @@ export default function AdminResults() {
 
       await recalculateEmployeeRanking(employeeId, selectedSeason)
       toast.success('Resultados salvos!', { style: TOAST_STYLE })
-      fetchData()
+      await fetchData()
     } catch (err: unknown) {
       toast.error((err as Error).message ?? 'Erro ao salvar', { style: TOAST_STYLE })
     } finally {

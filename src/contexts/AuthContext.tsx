@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) await fetchProfile(user.id)
-  }, [user?.id, fetchProfile])
+  }, [user, fetchProfile])
 
   useEffect(() => {
     // Timeout de segurança: forçar carregamento a terminar após 8 segundos se algo der errado
