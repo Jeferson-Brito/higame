@@ -102,19 +102,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 8000)
 
     supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
-        if (session?.user) {
-          const nextProfile = await fetchProfile(session.user.id)
-
-          if (nextProfile) {
-            setSession(session)
-            setUser(session.user)
-          }
+      .then(({ data: { session: currentSession } }) => {
+        if (currentSession?.user) {
+          setSession(currentSession)
+          setUser(currentSession.user)
+          setProfile(null)
         } else {
           clearAuthState()
+          setIsLoading(false)
         }
-
-        setIsLoading(false)
       })
       .catch(err => {
         console.error('Erro no getSession:', err)
@@ -123,19 +119,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          const nextProfile = await fetchProfile(session.user.id)
-
-          if (nextProfile) {
-            setSession(session)
-            setUser(session.user)
-          }
+      (_event, nextSession) => {
+        if (nextSession?.user) {
+          setIsLoading(true)
+          setSession(nextSession)
+          setUser(nextSession.user)
+          setProfile(null)
         } else {
           clearAuthState()
+          setIsLoading(false)
         }
-
-        setIsLoading(false)
       }
     )
 
@@ -143,7 +136,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
-  }, [clearAuthState, fetchProfile])
+  }, [clearAuthState])
+
+  useEffect(() => {
+    const userId = session?.user.id
+    if (!userId) return
+
+    let isActive = true
+    setIsLoading(true)
+
+    fetchProfile(userId).finally(() => {
+      if (isActive) setIsLoading(false)
+    })
+
+    return () => {
+      isActive = false
+    }
+  }, [session?.user.id, fetchProfile])
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
