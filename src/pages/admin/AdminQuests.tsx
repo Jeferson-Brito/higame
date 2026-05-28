@@ -187,6 +187,14 @@ export default function AdminQuests() {
         }
       }
 
+      // 3. Notificar o usuário
+      await supabase.from('notifications').insert({
+        profile_id: selectedEmp,
+        title: 'Missão Concluída! 🎯',
+        message: `Você completou a missão "${questDef.name}" e ganhou ${questDef.xp_reward} XP e ${questDef.coin_reward} HC!`,
+        type: 'quest_completed'
+      })
+
       toast.success('Missão concluída com sucesso! XP e Moedas entregues.')
       setSelectedEmp('')
       setSelectedQuest('')

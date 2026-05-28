@@ -10,6 +10,9 @@ import toast from 'react-hot-toast'
 export function Navbar() {
   const { profile, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [totalXp, setTotalXp] = useState(0)
   const [xpPerLevel, setXpPerLevel] = useState(1000)
   const navigate = useNavigate()
@@ -31,6 +34,19 @@ export function Navbar() {
           
           if (rank) setTotalXp(rank.total_xp)
         }
+
+        // Fetch Notifications
+        const { data: notifs } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('profile_id', profile!.id)
+          .order('created_at', { ascending: false })
+          .limit(20)
+        
+        if (notifs) {
+          setNotifications(notifs)
+          setUnreadCount(notifs.filter(n => !n.is_read).length)
+        }
       } catch (err) {
         console.error(err)
       }
@@ -46,6 +62,19 @@ export function Navbar() {
       style: { background: '#12121F', border: '1px solid #2A2A45', color: '#E2E8F0' }
     })
     navigate('/login')
+  }
+
+  const markAllAsRead = async () => {
+    if (unreadCount === 0 || !profile?.id) return
+    await supabase.from('notifications').update({ is_read: true }).eq('profile_id', profile.id).eq('is_read', false)
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+    setUnreadCount(0)
+  }
+
+  const markAsRead = async (id: string) => {
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id)
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+    setUnreadCount(prev => Math.max(0, prev - 1))
   }
 
   return (
@@ -83,17 +112,63 @@ export function Navbar() {
         )}
 
         {/* Notificações */}
-        <button className="w-9 h-9 rounded-xl bg-higame-surface2 border border-higame-border
-                           flex items-center justify-center text-higame-muted
-                           hover:text-higame-text hover:border-higame-border2 transition-all duration-200 relative">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-higame-purple" />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => { setNotifOpen(!notifOpen); setMenuOpen(false) }}
+            className="w-9 h-9 rounded-xl bg-higame-surface2 border border-higame-border
+                             flex items-center justify-center text-higame-muted
+                             hover:text-higame-text hover:border-higame-border2 transition-all duration-200 relative"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-higame-purple shadow-glow-purple" />
+            )}
+          </button>
+
+          {notifOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+              <div className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-higame-surface2
+                              border border-higame-border shadow-card z-50 overflow-hidden flex flex-col max-h-[400px]">
+                <div className="p-3 border-b border-higame-border flex justify-between items-center bg-slate-900/50">
+                  <span className="text-sm font-bold text-white">Notificações</span>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-xs text-higame-purple hover:text-white transition-colors">
+                      Marcar todas como lidas
+                    </button>
+                  )}
+                </div>
+                <div className="overflow-y-auto custom-scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-slate-500">Nenhuma notificação.</div>
+                  ) : (
+                    notifications.map(n => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => !n.is_read && markAsRead(n.id)}
+                        className={`p-3 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${!n.is_read ? 'bg-higame-purple/5' : ''}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.is_read ? 'bg-higame-purple' : 'bg-transparent'}`} />
+                          <div>
+                            <p className={`text-sm ${!n.is_read ? 'text-white font-bold' : 'text-slate-300'}`}>{n.title}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{n.message}</p>
+                            <p className="text-[10px] text-slate-500 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Avatar + Menu */}
         <div className="relative">
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => { setMenuOpen(!menuOpen); setNotifOpen(false) }}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-higame-surface2
                        border border-higame-border hover:border-higame-border2
                        transition-all duration-200"

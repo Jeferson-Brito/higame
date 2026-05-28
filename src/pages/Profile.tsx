@@ -58,6 +58,24 @@ export default function Profile() {
       const settings = await getAppSettings()
       setXpPerLevel(settings.xp_per_level)
 
+      // Notifica visita se não for o dono
+      if (loggedProfile && targetId && loggedProfile.id !== targetId) {
+        // Checa cooldown (1 hora)
+        const cacheKey = `last_visit_${loggedProfile.id}_to_${targetId}`
+        const lastVisit = localStorage.getItem(cacheKey)
+        const now = Date.now()
+        
+        if (!lastVisit || (now - Number(lastVisit)) > 60 * 60 * 1000) {
+          localStorage.setItem(cacheKey, now.toString())
+          await supabase.from('notifications').insert({
+            profile_id: targetId,
+            title: 'Nova Visita no Perfil 👀',
+            message: `${loggedProfile.full_name} acabou de visitar o seu perfil!`,
+            type: 'profile_view'
+          })
+        }
+      }
+
       // 1. Busca os dados base do perfil alvo
       const { data: profData } = await supabase
         .from('profiles')
@@ -199,6 +217,15 @@ export default function Profile() {
                   <Trophy className="w-4 h-4" />{ranking?.rank_position ? `${ranking.rank_position}º` : '—'}
                 </p>
               </div>
+              {ranking?.current_multiplier && ranking.current_multiplier > 1.0 && (
+                <div>
+                  <p className="text-xs font-inter text-higame-muted">Multiplicador</p>
+                  <p className="text-lg font-outfit font-bold text-amber-400 flex items-center gap-1">
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    {ranking.current_multiplier}x
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

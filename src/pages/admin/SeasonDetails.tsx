@@ -73,6 +73,10 @@ export default function SeasonDetails() {
         <div>
           <h1 className="text-3xl font-outfit font-black text-white">{season.name}</h1>
           <p className="text-higame-muted text-sm mt-1">{season.description || 'Sem descrição'}</p>
+          <p className="text-xs font-inter text-slate-400 mt-2 flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Período: <span className="text-white">{new Date(season.start_date).toLocaleDateString('pt-BR')}</span> até <span className="text-white">{new Date(season.end_date).toLocaleDateString('pt-BR')}</span></span>
+          </p>
         </div>
         <div className={`px-4 py-2 rounded-xl border font-bold text-sm ${statusColors[season.status]}`}>
           Status: {SEASON_STATUS_LABEL[season.status as keyof typeof SEASON_STATUS_LABEL]}

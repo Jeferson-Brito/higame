@@ -40,6 +40,8 @@ export interface Season {
   name: string
   month: number
   year: number
+  start_date: string
+  end_date: string
   status: SeasonStatus
   description: string | null
   started_at: string | null
@@ -111,6 +113,7 @@ export interface Ranking {
   employee_id: string
   total_xp: number
   total_score: number
+  current_multiplier: number
   rank_position: number | null
   kpi_summary: Record<string, KpiTier> | null
   updated_at: string

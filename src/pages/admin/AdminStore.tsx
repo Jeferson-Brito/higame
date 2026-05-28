@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 
 interface PurchaseRequest {
   id: string
+  employee_id: string
   status: 'pending' | 'fulfilled' | 'rejected'
   purchased_at: string
   profile: {
@@ -69,7 +70,7 @@ export default function AdminStore() {
       const [reqsData, itemsData] = await Promise.all([
         supabase
           .from('employee_purchases')
-          .select('id, status, purchased_at, profile:profiles(full_name, team), item:store_items(name, price_coins, type)')
+          .select('id, employee_id, status, purchased_at, profile:profiles(full_name, team), item:store_items(name, price_coins, type)')
           .order('purchased_at', { ascending: false }),
         supabase
           .from('store_items')
@@ -79,6 +80,7 @@ export default function AdminStore() {
 
       const mappedReqs = (reqsData.data ?? []).map((d: any) => ({
         id: d.id,
+        employee_id: d.employee_id,
         status: d.status,
         purchased_at: d.purchased_at,
         profile: Array.isArray(d.profile) ? d.profile[0] : d.profile,
@@ -99,14 +101,24 @@ export default function AdminStore() {
     void fetchData()
   }, [fetchData])
 
-  const handleFulfill = async (id: string, newStatus: 'fulfilled' | 'rejected') => {
+  const handleFulfill = async (req: PurchaseRequest, newStatus: 'fulfilled' | 'rejected') => {
     try {
       const { error } = await supabase
         .from('employee_purchases')
         .update({ status: newStatus, fulfilled_at: new Date().toISOString() })
-        .eq('id', id)
+        .eq('id', req.id)
 
       if (error) throw error
+
+      // Inserir notificação
+      await supabase.from('notifications').insert({
+        profile_id: req.employee_id,
+        title: newStatus === 'fulfilled' ? 'Compra Aprovada!' : 'Compra Recusada',
+        message: newStatus === 'fulfilled' 
+          ? `O item "${req.item.name}" foi entregue para você.` 
+          : `Sua solicitação de "${req.item.name}" não foi aprovada.`,
+        type: newStatus === 'fulfilled' ? 'store_approved' : 'store_rejected'
+      })
       
       toast.success(newStatus === 'fulfilled' ? 'Pedido Entregue!' : 'Pedido Recusado.')
       void fetchData()
@@ -243,10 +255,10 @@ export default function AdminStore() {
                       </p>
                     </div>
                     <div className="flex sm:flex-col gap-2 justify-center">
-                      <button onClick={() => handleFulfill(req.id, 'fulfilled')} className="flex items-center gap-1 px-4 py-2 bg-higame-success/10 text-higame-success border border-higame-success/20 rounded-lg hover:bg-higame-success hover:text-slate-950 transition-colors font-bold text-sm">
+                      <button onClick={() => handleFulfill(req, 'fulfilled')} className="flex items-center gap-1 px-4 py-2 bg-higame-success/10 text-higame-success border border-higame-success/20 rounded-lg hover:bg-higame-success hover:text-slate-950 transition-colors font-bold text-sm">
                         <CheckCircle className="w-4 h-4" /> Entregar
                       </button>
-                      <button onClick={() => handleFulfill(req.id, 'rejected')} className="flex items-center gap-1 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-slate-950 transition-colors font-bold text-sm">
+                      <button onClick={() => handleFulfill(req, 'rejected')} className="flex items-center gap-1 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-slate-950 transition-colors font-bold text-sm">
                         <XCircle className="w-4 h-4" /> Recusar
                       </button>
                     </div>

@@ -15,6 +15,8 @@ interface SeasonForm {
   name: string
   month: number
   year: number
+  start_date: string
+  end_date: string
   description: string
 }
 
@@ -22,7 +24,19 @@ function getDefaultSeasonForm(): SeasonForm {
   const now = new Date()
   const month = now.getMonth() + 1
   const year = now.getFullYear()
-  return { name: `${MONTH_NAMES[month]} ${year}`, month, year, description: '' }
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+  // Último dia do mês
+  const lastDay = new Date(year, month, 0).getDate()
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  
+  return { 
+    name: `${MONTH_NAMES[month]} ${year}`, 
+    month, 
+    year, 
+    start_date: startDate,
+    end_date: endDate,
+    description: '' 
+  }
 }
 
 function buildSeasonName(month: number, year: number) {
@@ -63,13 +77,15 @@ export default function AdminSeasons() {
     try {
       if (editingId) {
         const { error } = await supabase.from('seasons').update({
-          name: form.name, month: form.month, year: form.year, description: form.description
+          name: form.name, month: form.month, year: form.year, 
+          start_date: form.start_date, end_date: form.end_date, description: form.description
         }).eq('id', editingId)
         if (error) throw error
         toast.success('Temporada atualizada!', { style: TOAST_STYLE })
       } else {
         const { error } = await supabase.from('seasons').insert({
-          name: form.name, month: form.month, year: form.year, description: form.description, status: 'draft'
+          name: form.name, month: form.month, year: form.year, 
+          start_date: form.start_date, end_date: form.end_date, description: form.description, status: 'draft'
         })
         if (error) throw error
         toast.success('Temporada criada!', { style: TOAST_STYLE })
@@ -167,7 +183,9 @@ export default function AdminSeasons() {
                       </div>
                     </div>
                     {season.description && <p className="text-xs font-inter text-higame-muted mt-0.5">{season.description}</p>}
-                    {season.started_at && <p className="text-xs font-inter text-higame-muted mt-0.5">Iniciada em {new Date(season.started_at).toLocaleDateString('pt-BR')}</p>}
+                    <p className="text-xs font-inter text-slate-400 mt-1">
+                      Período: <span className="text-white">{new Date(season.start_date).toLocaleDateString('pt-BR')}</span> até <span className="text-white">{new Date(season.end_date).toLocaleDateString('pt-BR')}</span>
+                    </p>
                   </div>
                 </div>
 
@@ -175,7 +193,7 @@ export default function AdminSeasons() {
                 <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   {season.status === 'draft' && (
                     <>
-                      <button onClick={() => { setForm({ name: season.name, month: season.month, year: season.year, description: season.description ?? '' }); setEditingId(season.id); setShowForm(true) }} className="btn-ghost p-2 rounded-lg" title="Editar">
+                      <button onClick={() => { setForm({ name: season.name, month: season.month, year: season.year, start_date: season.start_date, end_date: season.end_date, description: season.description ?? '' }); setEditingId(season.id); setShowForm(true) }} className="btn-ghost p-2 rounded-lg" title="Editar">
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button onClick={() => handleActivate(season)} className="btn-secondary flex items-center gap-1.5 px-3 py-2 text-xs">
@@ -211,16 +229,26 @@ export default function AdminSeasons() {
             <h3 className="text-lg font-outfit font-bold text-higame-text">{editingId ? 'Editar Temporada' : 'Nova Temporada'}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="input-label">Mês</label>
+                <label className="input-label">Mês Referência</label>
                 <select value={form.month} onChange={e => updatePeriod('month', Number(e.target.value))} className="input-field">
                   {MONTH_NAMES.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="input-label">Ano</label>
+                <label className="input-label">Ano Referência</label>
                 <select value={form.year} onChange={e => updatePeriod('year', Number(e.target.value))} className="input-field">
                   {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="input-label">Data Início</label>
+                <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="input-field" />
+              </div>
+              <div>
+                <label className="input-label">Data Fim</label>
+                <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="input-field" />
               </div>
             </div>
             <div>

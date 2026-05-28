@@ -155,6 +155,7 @@ export async function recalculateEmployeeRanking(
       employee_id: employeeId,
       total_xp: xpBreakdown.final_xp,
       total_score: score,
+      current_multiplier: xpBreakdown.multiplier_value,
       kpi_summary: kpiSummary,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'season_id,employee_id' })
