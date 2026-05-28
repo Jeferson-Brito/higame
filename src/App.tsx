@@ -23,6 +23,7 @@ import AdminKPIs from '@/pages/admin/KPIs'
 import AdminResults from '@/pages/admin/Results'
 import AdminRanking from '@/pages/admin/AdminRanking'
 import AdminStore from '@/pages/admin/AdminStore'
+import AdminQuests from '@/pages/admin/AdminQuests'
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="results" element={<AdminResults />} />
             <Route path="ranking" element={<AdminRanking />} />
             <Route path="store" element={<AdminStore />} />
+            <Route path="quests" element={<AdminQuests />} />
           </Route>
 
           {/* Fallback */}

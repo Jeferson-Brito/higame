@@ -1,14 +1,43 @@
-import { Bell, ChevronDown } from 'lucide-react'
+import { Bell, ChevronDown, Coins, Star } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getInitials } from '@/lib/utils'
-import { useState } from 'react'
+import { getInitials, calculateLevel } from '@/lib/utils'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
+import { getAppSettings } from '@/lib/ranking'
 import toast from 'react-hot-toast'
 
 export function Navbar() {
   const { profile, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [totalXp, setTotalXp] = useState(0)
+  const [xpPerLevel, setXpPerLevel] = useState(1000)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!profile?.id) return
+
+    async function fetchStats() {
+      try {
+        const settings = await getAppSettings()
+        setXpPerLevel(settings.xp_per_level)
+
+        const { data: season } = await supabase
+          .from('seasons').select('id').eq('status', 'active').single()
+        
+        if (season) {
+          const { data: rank } = await supabase
+            .from('rankings').select('total_xp').eq('employee_id', profile!.id).eq('season_id', season.id).single()
+          
+          if (rank) setTotalXp(rank.total_xp)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    
+    void fetchStats()
+  }, [profile?.id])
 
   const handleSignOut = async () => {
     setMenuOpen(false)
@@ -36,8 +65,22 @@ export function Navbar() {
       {/* Desktop: espaço vazio ou breadcrumb futuro */}
       <div className="hidden lg:block" />
 
-      {/* Direita: notificação + avatar */}
-      <div className="flex items-center gap-3">
+      {/* Direita: stats + notificação + avatar */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        
+        {/* Stats (Level & Coins) */}
+        {profile?.role === 'employee' && (
+          <div className="hidden sm:flex items-center gap-2 mr-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-higame-surface2 border border-higame-border rounded-xl shadow-inner">
+              <Star className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-outfit font-bold text-white">Nível {calculateLevel(totalXp, xpPerLevel)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-higame-surface2 border border-amber-500/20 rounded-xl shadow-glow-gold/10">
+              <Coins className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-outfit font-bold text-amber-400">{profile.coins_balance.toLocaleString()} HC</span>
+            </div>
+          </div>
+        )}
 
         {/* Notificações */}
         <button className="w-9 h-9 rounded-xl bg-higame-surface2 border border-higame-border
