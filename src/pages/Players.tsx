@@ -12,6 +12,7 @@ interface Player {
   full_name: string
   avatar_url: string | null
   team: string | null
+  team_data?: { name: string; color: string; icon: string } | null
   total_xp: number
   level: number
   active_title?: { name: string } | null
@@ -33,7 +34,7 @@ export default function Players() {
       // Buscar perfis ativos (apenas employees)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, team, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity)')
+        .select('id, full_name, avatar_url, team, team_data:teams(name, color, icon), active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity)')
         .eq('role', 'employee')
         .eq('is_active', true)
         .order('full_name', { ascending: true })
@@ -60,6 +61,7 @@ export default function Players() {
           ...p,
           active_title: Array.isArray(p.active_title) ? p.active_title[0] : p.active_title,
           active_frame: Array.isArray(p.active_frame) ? p.active_frame[0] : p.active_frame,
+          team_data: Array.isArray((p as any).team_data) ? (p as any).team_data[0] : (p as any).team_data,
           total_xp,
           level: calculateLevel(total_xp, xpPerLevel)
         }
@@ -139,9 +141,17 @@ export default function Players() {
                       {player.active_title.name}
                     </p>
                   )}
-                  <p className="text-xs text-slate-400 truncate mt-0.5">
-                    {player.team || 'Sem time'}
-                  </p>
+                  {/* Badge de equipe */}
+                  {player.team_data ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5"
+                      style={{ backgroundColor: `${player.team_data.color}20`, color: player.team_data.color, border: `1px solid ${player.team_data.color}40` }}
+                    >
+                      {player.team_data.icon} {player.team_data.name}
+                    </span>
+                  ) : (
+                    <p className="text-xs text-slate-500 mt-0.5">Sem equipe</p>
+                  )}
                 </div>
               </div>
 

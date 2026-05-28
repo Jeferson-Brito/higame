@@ -11,6 +11,16 @@ export type RarityTier = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic'
 export type QuestFrequency = 'daily' | 'weekly' | 'season' | 'one_shot'
 export type StoreItemType = 'frame' | 'banner' | 'title' | 'real_reward'
 
+export interface Team {
+  id: string
+  name: string
+  description: string | null
+  color: string
+  icon: string
+  is_active: boolean
+  created_at: string
+}
+
 // ============================================================
 // Entidades do banco
 // ============================================================
@@ -22,6 +32,8 @@ export interface Profile {
   avatar_url: string | null
   position: string | null
   team: string | null
+  team_id: string | null
+  team_data?: Team | null
   current_streak: number
   longest_streak: number
   last_login: string | null

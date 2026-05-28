@@ -27,6 +27,7 @@ import AdminRanking from '@/pages/admin/AdminRanking'
 import AdminStore from '@/pages/admin/AdminStore'
 import AdminQuests from '@/pages/admin/AdminQuests'
 import AdminBadges from '@/pages/admin/AdminBadges'
+import AdminTeams from '@/pages/admin/AdminTeams'
 
 export default function App() {
   return (
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="ranking" element={<AdminRanking />} />
             <Route path="store" element={<AdminStore />} />
             <Route path="quests" element={<AdminQuests />} />
+            <Route path="teams" element={<AdminTeams />} />
           </Route>
 
           {/* Fallback */}

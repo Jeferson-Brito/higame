@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Trophy, History, User,
   Users, Calendar, Settings, BarChart3,
   LogOut, Zap, ChevronLeft, ChevronRight,
-  ClipboardList, Store, Award, Target
+  ClipboardList, Store, Award, Target, Users2
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -26,6 +26,7 @@ const EMPLOYEE_NAV = [
 const ADMIN_NAV = [
   { icon: LayoutDashboard, label: 'Painel',        to: '/admin' },
   { icon: Users,           label: 'Colaboradores', to: '/admin/employees' },
+  { icon: Users2,          label: 'Equipes',       to: '/admin/teams' },
   { icon: Target,          label: 'Missões',       to: '/admin/quests' },
   { icon: Award,           label: 'Medalhas',      to: '/admin/badges' },
   { icon: Calendar,        label: 'Temporadas',    to: '/admin/seasons' },
