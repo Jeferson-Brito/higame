@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase'
 import { PageHeader, GlassCard, Skeleton } from '@/components/ui/index'
 import { Store, CheckCircle, XCircle, Clock, Plus, Edit2, X, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { FramePreview } from '@/components/ui/AvatarFrame'
+import { BannerPreview, BANNER_STYLES } from '@/components/ui/ProfileBanner'
 
 interface PurchaseRequest {
   id: string
@@ -37,6 +39,12 @@ const EMOJI_LIBRARY = [
   '👕', '🧢', '🎒', '👟', '📱', '🎧', '💻', '⌚',
   '👑', '💎', '🏆', '🌟', '✨', '🔥', '⚡', '🎭'
 ]
+
+const FRAME_KEYS = ['frame:neon', 'frame:gold', 'frame:fire', 'frame:galaxy', 'frame:silver']
+const FRAME_NAMES: Record<string, string> = {
+  'frame:neon': 'Neon', 'frame:gold': 'Dourada',
+  'frame:fire': 'Chamas', 'frame:galaxy': 'Galáxia', 'frame:silver': 'Prata'
+}
 
 const RARITY_COLORS: Record<string, string> = {
   common: 'from-slate-400 to-slate-600',
@@ -134,7 +142,7 @@ export default function AdminStore() {
     setDescription('')
     setType('real_reward')
     setRarity('common')
-    setPrice(1000)
+    setPrice(0)
     setSelectedIcon('🎁')
   }
 
@@ -316,43 +324,76 @@ export default function AdminStore() {
 
             <form onSubmit={handleSaveItem} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Escolha um Ícone</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-slate-900/50 rounded-xl border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
-                  {EMOJI_LIBRARY.map(emoji => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setSelectedIcon(emoji)}
-                      className={`text-2xl w-10 h-10 rounded-lg flex items-center justify-center transition-all ${selectedIcon === emoji ? 'bg-higame-purple/20 border-2 border-higame-purple scale-110 shadow-glow-purple' : 'hover:bg-white/10 border-2 border-transparent'}`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Tipo de Item</label>
+                <select value={type} onChange={e => { setType(e.target.value as any); setSelectedIcon(e.target.value === 'frame' ? 'frame:neon' : e.target.value === 'banner' ? 'banner:aurora' : '🎁') }} className="input-field w-full">
+                  <option value="real_reward">🎁 Recompensa Real</option>
+                  <option value="frame">🖼️ Moldura de Avatar</option>
+                  <option value="banner">🎨 Banner de Fundo</option>
+                  <option value="title">🏷️ Título do Jogador</option>
+                </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">2. Nome do Produto</label>
-                <input required value={name} onChange={e => setName(e.target.value)} className="input-field w-full" placeholder="Ex: 1 Dia de Folga" />
-              </div>
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">3. Descrição</label>
-                <input required value={description} onChange={e => setDescription(e.target.value)} className="input-field w-full" placeholder="Ex: Troque por um dia livre." />
-              </div>
+              {/* Seletor inteligente por tipo */}
+              {type === 'frame' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">2. Escolha a Moldura</label>
+                  <div className="flex flex-wrap gap-3 p-3 bg-slate-900/50 rounded-xl border border-white/5">
+                    {FRAME_KEYS.map(fk => (
+                      <button
+                        key={fk} type="button"
+                        onClick={() => setSelectedIcon(fk)}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${selectedIcon === fk ? 'bg-higame-purple/20 border-2 border-higame-purple' : 'border-2 border-transparent hover:bg-white/5'}`}
+                      >
+                        <FramePreview frameKey={fk} size={48} />
+                        <span className="text-[10px] text-slate-400">{FRAME_NAMES[fk]}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {type === 'banner' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">2. Escolha o Banner</label>
+                  <div className="flex flex-wrap gap-3 p-3 bg-slate-900/50 rounded-xl border border-white/5">
+                    {Object.keys(BANNER_STYLES).map(bk => (
+                      <button
+                        key={bk} type="button"
+                        onClick={() => setSelectedIcon(bk)}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${selectedIcon === bk ? 'bg-higame-purple/20 border-2 border-higame-purple' : 'border-2 border-transparent hover:bg-white/5'}`}
+                      >
+                        <BannerPreview bannerKey={bk} width={80} height={44} />
+                        <span className="text-[10px] text-slate-400">{BANNER_STYLES[bk].label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(type === 'real_reward' || type === 'title') && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">2. Escolha um Ícone</label>
+                  <div className="flex flex-wrap gap-2 p-3 bg-slate-900/50 rounded-xl border border-white/5 max-h-40 overflow-y-auto custom-scrollbar">
+                    {EMOJI_LIBRARY.map(emoji => (
+                      <button
+                        key={emoji} type="button"
+                        onClick={() => setSelectedIcon(emoji)}
+                        className={`text-2xl w-10 h-10 rounded-lg flex items-center justify-center transition-all ${selectedIcon === emoji ? 'bg-higame-purple/20 border-2 border-higame-purple scale-110 shadow-glow-purple' : 'hover:bg-white/10 border-2 border-transparent'}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tipo</label>
-                  <select value={type} onChange={e => setType(e.target.value as any)} className="input-field w-full">
-                    <option value="real_reward">Recompensa Real</option>
-                    <option value="frame">Moldura de Avatar</option>
-                    <option value="banner">Banner de Fundo</option>
-                    <option value="title">Título do Jogador</option>
-                  </select>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nome do Produto</label>
+                  <input required value={name} onChange={e => setName(e.target.value)} className="input-field w-full" placeholder="Ex: 1 Dia de Folga" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Raridade (Fundo)</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Raridade</label>
                   <select value={rarity} onChange={e => setRarity(e.target.value as any)} className="input-field w-full capitalize">
                     <option value="common">Comum</option>
                     <option value="rare">Raro</option>
@@ -364,8 +405,16 @@ export default function AdminStore() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Preço (HiCoins)</label>
-                <input type="number" required min="1" value={price} onChange={e => setPrice(Number(e.target.value))} className="input-field w-full" />
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Descrição</label>
+                <input required value={description} onChange={e => setDescription(e.target.value)} className="input-field w-full" placeholder="Ex: Troque por um dia livre." />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Preço (HiCoins) — 0 = Grátis</label>
+                <input type="number" required min="0" value={price} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} className="input-field w-full" />
+                {price === 0 && (
+                  <p className="text-xs text-higame-success font-bold mt-1">✅ Este item será exibido como <strong>Grátis</strong> na loja.</p>
+                )}
               </div>
 
               <button disabled={saving} type="submit" className="w-full btn-primary py-3 mt-4 flex justify-center items-center gap-2">
@@ -402,10 +451,17 @@ export default function AdminStore() {
                       </button>
                     </div>
 
-                    <div className="text-3xl mb-2 drop-shadow-md">{item.asset_url || '🎁'}</div>
+                    <div className="text-3xl mb-2 drop-shadow-md">
+                      {item.asset_url?.startsWith('frame:') ? <FramePreview frameKey={item.asset_url} size={40} /> :
+                       item.asset_url?.startsWith('banner:') ? <BannerPreview bannerKey={item.asset_url} width={56} height={32} /> :
+                       item.asset_url || '🎁'}
+                    </div>
                     <h3 className="font-outfit font-bold text-white text-xs px-1 leading-tight mb-2">{item.name}</h3>
-                    <div className="mt-auto flex items-center gap-1 font-bold text-amber-400 text-sm bg-slate-950/50 px-2 py-0.5 rounded-full">
-                      {item.price_coins} HC
+                    <div className="mt-auto flex items-center gap-1 font-bold text-sm bg-slate-950/50 px-2 py-0.5 rounded-full">
+                      {item.price_coins === 0
+                        ? <span className="text-higame-success">Grátis</span>
+                        : <span className="text-amber-400">{item.price_coins} HC</span>
+                      }
                     </div>
                   </div>
                 ))

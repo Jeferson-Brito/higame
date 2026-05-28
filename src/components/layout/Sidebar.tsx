@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Trophy, History, User,
   Users, Calendar, Settings, BarChart3,
-  LogOut, Zap, ChevronLeft, ChevronRight,
-  ClipboardList, Store, Award, Target, Users2
+  ClipboardList, Store, Award, Target, Users2, Coins
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -32,6 +31,7 @@ const ADMIN_NAV = [
   { icon: Calendar,        label: 'Temporadas',    to: '/admin/seasons' },
   { icon: BarChart3,       label: 'Metas (KPIs)',  to: '/admin/kpis' },
   { icon: ClipboardList,   label: 'Resultados',    to: '/admin/results' },
+  { icon: Coins,           label: 'Moedas (HC)',   to: '/admin/coins' },
   { icon: Trophy,          label: 'Ranking',       to: '/admin/ranking' },
   { icon: Store,           label: 'Loja',          to: '/admin/store' },
 ]

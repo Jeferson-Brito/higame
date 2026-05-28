@@ -28,6 +28,7 @@ import AdminStore from '@/pages/admin/AdminStore'
 import AdminQuests from '@/pages/admin/AdminQuests'
 import AdminBadges from '@/pages/admin/AdminBadges'
 import AdminTeams from '@/pages/admin/AdminTeams'
+import AdminCoins from '@/pages/admin/AdminCoins'
 
 export default function App() {
   return (
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="store" element={<AdminStore />} />
             <Route path="quests" element={<AdminQuests />} />
             <Route path="teams" element={<AdminTeams />} />
+            <Route path="coins" element={<AdminCoins />} />
           </Route>
 
           {/* Fallback */}

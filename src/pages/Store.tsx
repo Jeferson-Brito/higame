@@ -5,6 +5,8 @@ import { GlassCard, PageHeader, Skeleton } from '@/components/ui/index'
 import { useAuth } from '@/contexts/AuthContext'
 import { Store as StoreIcon, Coins, Clock, Search, ShoppingCart, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { FramePreview } from '@/components/ui/AvatarFrame'
+import { BannerPreview } from '@/components/ui/ProfileBanner'
 
 interface StoreItem {
   id: string
@@ -56,7 +58,7 @@ export default function Store() {
 
   const handleBuy = async (item: StoreItem) => {
     if (!profile?.id) return
-    if (balance < item.price_coins) {
+    if (item.price_coins > 0 && balance < item.price_coins) {
       toast.error('Saldo insuficiente!')
       return
     }
@@ -152,12 +154,22 @@ export default function Store() {
                 transition={{ delay: i * 0.05 }}
                 className="relative overflow-hidden rounded-[2rem] bg-slate-900 border border-white/5 flex flex-col group hover:border-white/20 transition-all"
               >
-                {/* Imagem do Item (Banner/Cor) */}
-                <div className={`h-32 w-full bg-gradient-to-r ${RARITY_COLORS[item.rarity]} flex items-center justify-center text-5xl relative overflow-hidden`}>
+                {/* Preview visual do item */}
+                <div className={`h-32 w-full bg-gradient-to-r ${RARITY_COLORS[item.rarity]} flex items-center justify-center relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-black/20" />
-                  <motion.span whileHover={{ scale: 1.2, rotate: 5 }} className="relative z-10 drop-shadow-xl cursor-default">
-                    {item.asset_url || '🎁'}
-                  </motion.span>
+                  {item.asset_url?.startsWith('frame:') ? (
+                    <div className="relative z-10 scale-150">
+                      <FramePreview frameKey={item.asset_url} size={56} />
+                    </div>
+                  ) : item.asset_url?.startsWith('banner:') ? (
+                    <div className="absolute inset-0">
+                      <BannerPreview bannerKey={item.asset_url} width={999} height={128} />
+                    </div>
+                  ) : (
+                    <motion.span whileHover={{ scale: 1.2, rotate: 5 }} className="relative z-10 text-5xl drop-shadow-xl cursor-default">
+                      {item.asset_url || '🎁'}
+                    </motion.span>
+                  )}
                 </div>
 
                 <div className="p-6 flex flex-col flex-1">
@@ -170,10 +182,16 @@ export default function Store() {
                   </p>
 
                   <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-auto">
-                    <div className={`flex items-center gap-1.5 font-outfit font-black text-lg ${canAfford ? 'text-amber-400' : 'text-red-400'}`}>
-                      <Coins className="w-5 h-5" />
-                      {item.price_coins.toLocaleString()}
-                    </div>
+                    {item.price_coins === 0 ? (
+                      <span className="font-outfit font-black text-lg text-higame-success flex items-center gap-1">
+                        ✅ Grátis
+                      </span>
+                    ) : (
+                      <div className={`flex items-center gap-1.5 font-outfit font-black text-lg ${canAfford ? 'text-amber-400' : 'text-red-400'}`}>
+                        <Coins className="w-5 h-5" />
+                        {item.price_coins.toLocaleString()}
+                      </div>
+                    )}
                     
                     <button
                       onClick={() => handleBuy(item)}
