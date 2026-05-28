@@ -63,23 +63,27 @@ export default function Store() {
 
     setBuyingId(item.id)
     try {
-      // Cria a compra (status pending default)
+      // 1. Cria a compra (status pending default)
       const { error: purchaseError } = await supabase.from('employee_purchases').insert({
         employee_id: profile.id,
         item_id: item.id
       })
 
-      if (purchaseError) throw purchaseError
+      if (purchaseError) {
+        if (purchaseError.message.includes('Saldo insuficiente')) {
+          throw new Error('Você não tem saldo suficiente (bloqueado pelo servidor).')
+        }
+        throw purchaseError
+      }
 
-      // Desconta o saldo (precisará de uma trigger ou RPC no futuro para evitar race conditions, mas faremos simples no frontend por agora)
+      // 2. A trigger do banco ('process_store_purchase') já descontou o saldo.
+      // Apenas atualizamos a tela para ficar fluído.
       const newBalance = balance - item.price_coins
-      await supabase.from('profiles').update({ coins_balance: newBalance }).eq('id', profile.id)
-      
       setBalance(newBalance)
       toast.success('Compra realizada! O RH será notificado.', { icon: '🎉' })
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      toast.error('Erro ao processar compra.')
+      toast.error(err.message || 'Erro ao processar compra.')
     } finally {
       setBuyingId(null)
     }
