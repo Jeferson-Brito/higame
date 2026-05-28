@@ -12,6 +12,8 @@ import Dashboard from '@/pages/Dashboard'
 import Ranking from '@/pages/Ranking'
 import Seasons from '@/pages/Seasons'
 import Profile from '@/pages/Profile'
+import Store from '@/pages/Store'
+import Badges from '@/pages/Badges'
 
 // Páginas admin
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -20,6 +22,7 @@ import AdminSeasons from '@/pages/admin/Seasons'
 import AdminKPIs from '@/pages/admin/KPIs'
 import AdminResults from '@/pages/admin/Results'
 import AdminRanking from '@/pages/admin/AdminRanking'
+import AdminStore from '@/pages/admin/AdminStore'
 
 export default function App() {
   return (
@@ -40,6 +43,8 @@ export default function App() {
             <Route path="ranking" element={<Ranking />} />
             <Route path="seasons" element={<Seasons />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="store" element={<Store />} />
+            <Route path="badges" element={<Badges />} />
           </Route>
 
           {/* Área Admin */}
@@ -54,6 +59,7 @@ export default function App() {
             <Route path="kpis" element={<AdminKPIs />} />
             <Route path="results" element={<AdminResults />} />
             <Route path="ranking" element={<AdminRanking />} />
+            <Route path="store" element={<AdminStore />} />
           </Route>
 
           {/* Fallback */}
