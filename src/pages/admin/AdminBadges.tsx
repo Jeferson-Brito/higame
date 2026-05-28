@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, GlassCard, Skeleton } from '@/components/ui/index'
-import { Trophy, Plus, CheckCircle2, Award } from 'lucide-react'
+import { Trophy, Plus, CheckCircle2, Award, Edit2, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Badge {
@@ -39,7 +39,8 @@ export default function AdminBadges() {
   // Tab State
   const [activeTab, setActiveTab] = useState<'create' | 'approve'>('create')
 
-  // Create Form State
+  // Create/Edit Form State
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedIcon, setSelectedIcon] = useState('🏆')
@@ -75,28 +76,52 @@ export default function AdminBadges() {
     void fetchData()
   }, [fetchData])
 
-  const handleCreateBadge = async (e: React.FormEvent) => {
+  const handleSaveBadge = async (e: React.FormEvent) => {
     e.preventDefault()
     setCreating(true)
     try {
-      const { error } = await supabase
-        .from('badges')
-        .insert({
-          name, description, icon: selectedIcon, rarity, xp_reward: xp, coin_reward: coins
-        })
+      const payload = { name, description, icon: selectedIcon, rarity, xp_reward: xp, coin_reward: coins }
 
-      if (error) throw error
+      if (editingId) {
+        const { error } = await supabase.from('badges').update(payload).eq('id', editingId)
+        if (error) throw error
+        toast.success('Medalha atualizada com sucesso!')
+      } else {
+        const { error } = await supabase.from('badges').insert(payload)
+        if (error) throw error
+        toast.success('Medalha criada com sucesso!')
+      }
 
-      toast.success('Medalha criada com sucesso!')
-      setName('')
-      setDescription('')
+      resetForm()
       void fetchData()
     } catch (err) {
       console.error(err)
-      toast.error('Erro ao criar medalha.')
+      toast.error('Erro ao salvar medalha.')
     } finally {
       setCreating(false)
     }
+  }
+
+  const startEditing = (badge: Badge) => {
+    setActiveTab('create')
+    setEditingId(badge.id)
+    setName(badge.name)
+    setDescription(badge.description)
+    setSelectedIcon(badge.icon)
+    setRarity(badge.rarity)
+    setXp(badge.xp_reward)
+    setCoins(badge.coin_reward)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const resetForm = () => {
+    setEditingId(null)
+    setName('')
+    setDescription('')
+    setSelectedIcon('🏆')
+    setRarity('common')
+    setXp(100)
+    setCoins(50)
   }
 
   const handleGrantBadge = async (e: React.FormEvent) => {
@@ -108,12 +133,10 @@ export default function AdminBadges() {
       const badgeDef = badges.find(b => b.id === selectedBadge)
       if (!badgeDef) throw new Error('Badge not found')
 
-      // 1. Inserir em employee_badges
       const { error: insertError } = await supabase
         .from('employee_badges')
         .insert({ employee_id: selectedEmp, badge_id: selectedBadge })
 
-      // Pode dar erro se ele já tiver a medalha (Unique constraint).
       if (insertError) {
         if (insertError.code === '23505') {
           throw new Error('O colaborador já possui esta medalha!')
@@ -121,7 +144,6 @@ export default function AdminBadges() {
         throw insertError
       }
 
-      // 2. Dar as recompensas
       const { data: prof } = await supabase.from('profiles').select('coins_balance').eq('id', selectedEmp).single()
       if (prof) {
         await supabase.from('profiles').update({ coins_balance: prof.coins_balance + badgeDef.coin_reward }).eq('id', selectedEmp)
@@ -157,10 +179,10 @@ export default function AdminBadges() {
 
       <div className="flex gap-4 border-b border-white/10 pb-4">
         <button 
-          onClick={() => setActiveTab('create')}
+          onClick={() => { setActiveTab('create'); resetForm(); }}
           className={`flex items-center gap-2 px-4 py-2 font-bold rounded-xl transition-all ${activeTab === 'create' ? 'bg-amber-500 text-slate-900 shadow-glow-gold' : 'text-slate-400 hover:bg-white/5'}`}
         >
-          <Plus className="w-5 h-5" /> Criar Medalha
+          <Plus className="w-5 h-5" /> {editingId ? 'Editar Medalha' : 'Criar Medalha'}
         </button>
         <button 
           onClick={() => setActiveTab('approve')}
@@ -174,15 +196,28 @@ export default function AdminBadges() {
         
         {/* Painel Esquerdo baseado na Tab */}
         {activeTab === 'create' ? (
-          <GlassCard className="p-6">
+          <GlassCard className="p-6 relative">
+            {editingId && (
+              <button 
+                onClick={resetForm} 
+                className="absolute top-6 right-6 text-slate-400 hover:text-white flex items-center gap-1 text-sm bg-slate-800 px-3 py-1.5 rounded-lg"
+              >
+                <X className="w-4 h-4" /> Cancelar Edição
+              </button>
+            )}
+
             <h2 className="text-xl font-outfit font-bold text-white mb-6 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" /> Nova Medalha
+              {editingId ? (
+                <><Edit2 className="w-5 h-5 text-amber-400" /> Editando Medalha</>
+              ) : (
+                <><Trophy className="w-5 h-5 text-amber-400" /> Nova Medalha</>
+              )}
             </h2>
-            <form onSubmit={handleCreateBadge} className="space-y-4">
-              
+
+            <form onSubmit={handleSaveBadge} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Escolha um Ícone</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-slate-900/50 rounded-xl border border-white/5 max-h-48 overflow-y-auto">
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-900/50 rounded-xl border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
                   {EMOJI_LIBRARY.map(emoji => (
                     <button
                       key={emoji}
@@ -229,7 +264,7 @@ export default function AdminBadges() {
               </div>
 
               <button disabled={creating} type="submit" className="w-full py-3 mt-4 flex justify-center items-center gap-2 bg-amber-500 text-slate-900 font-bold rounded-xl hover:scale-105 transition-transform shadow-glow-gold">
-                {creating ? 'Criando...' : 'Salvar Medalha no Catálogo'}
+                {creating ? 'Salvando...' : (editingId ? 'Salvar Alterações' : 'Salvar Medalha no Catálogo')}
               </button>
             </form>
           </GlassCard>
@@ -276,9 +311,19 @@ export default function AdminBadges() {
               <p className="text-sm text-slate-500 col-span-full">Nenhuma medalha criada ainda.</p>
             ) : (
               badges.map(b => (
-                <div key={b.id} className={`flex flex-col items-center text-center p-4 rounded-xl border ${RARITY_COLORS[b.rarity]} bg-opacity-10`}>
+                <div key={b.id} className={`relative flex flex-col items-center text-center p-4 rounded-xl border ${RARITY_COLORS[b.rarity]} bg-opacity-10 group`}>
+                  
+                  {/* Botão de Editar visível apenas no hover */}
+                  <button 
+                    onClick={() => startEditing(b)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-slate-900 border border-white/20 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:text-amber-400 hover:border-amber-400/50"
+                    title="Editar Medalha"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+
                   <div className="text-4xl mb-2 filter drop-shadow-md">{b.icon}</div>
-                  <h3 className="font-outfit font-bold text-white text-xs">{b.name}</h3>
+                  <h3 className="font-outfit font-bold text-white text-xs px-2 leading-tight">{b.name}</h3>
                   <div className="flex gap-2 mt-2">
                     <span className="text-[9px] font-bold text-higame-purple">+{b.xp_reward} XP</span>
                     <span className="text-[9px] font-bold text-amber-400">+{b.coin_reward} HC</span>
