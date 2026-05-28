@@ -30,6 +30,7 @@ const ADMIN_NAV = [
   { icon: Target,          label: 'Missões',       to: '/admin/quests' },
   { icon: Award,           label: 'Medalhas',      to: '/admin/badges' },
   { icon: Calendar,        label: 'Temporadas',    to: '/admin/seasons' },
+  { icon: BarChart3,       label: 'Metas (KPIs)',  to: '/admin/kpis' },
   { icon: ClipboardList,   label: 'Resultados',    to: '/admin/results' },
   { icon: Trophy,          label: 'Ranking',       to: '/admin/ranking' },
   { icon: Store,           label: 'Loja',          to: '/admin/store' },

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, GlassCard, Skeleton } from '@/components/ui/index'
-import { Target, Plus, CheckCircle2, Users } from 'lucide-react'
+import { Target, Plus, CheckCircle2, Users, Edit2, Trash2, X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { ConfirmModal } from '@/components/ui/index'
 
 interface Quest {
   id: string
@@ -31,6 +32,8 @@ export default function AdminQuests() {
   const [target, setTarget] = useState(1)
   const [frequency, setFrequency] = useState('daily')
   const [creating, setCreating] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Quest | null>(null)
 
   // Approve Form State
   const [selectedEmp, setSelectedEmp] = useState('')
@@ -59,41 +62,85 @@ export default function AdminQuests() {
     void fetchData()
   }, [fetchData])
 
+  const resetForm = () => {
+    setEditingId(null)
+    setName('')
+    setDescription('')
+    setXp(50)
+    setCoins(10)
+    setTarget(1)
+    setFrequency('daily')
+  }
+
+  const startEditing = (quest: Quest) => {
+    setActiveTab('create')
+    setEditingId(quest.id)
+    setName(quest.name)
+    setDescription(quest.description || '')
+    setXp(quest.xp_reward)
+    setCoins(quest.coin_reward)
+    setTarget(quest.target_value)
+    setFrequency(quest.frequency)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDeleteQuest = async (quest: Quest) => {
+    try {
+      const { error } = await supabase.from('quests').delete().eq('id', quest.id)
+      if (error) throw error
+      toast.success('Missão excluída com sucesso!')
+      setConfirmDelete(null)
+      void fetchData()
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao excluir missão.')
+    }
+  }
+
   const handleCreateAndDistribute = async (e: React.FormEvent) => {
     e.preventDefault()
     setCreating(true)
     try {
-      // 1. Cria a Quest
-      const { data: newQuest, error: questError } = await supabase
-        .from('quests')
-        .insert({
-          name, description, xp_reward: xp, coin_reward: coins, target_value: target, frequency
-        })
-        .select()
-        .single()
+      if (editingId) {
+        // Atualiza a missão existente
+        const { error: updError } = await supabase
+          .from('quests')
+          .update({ name, description, xp_reward: xp, coin_reward: coins, target_value: target, frequency })
+          .eq('id', editingId)
+        
+        if (updError) throw updError
+        toast.success('Missão atualizada!')
+      } else {
+        // 1. Cria a Quest
+        const { data: newQuest, error: questError } = await supabase
+          .from('quests')
+          .insert({ name, description, xp_reward: xp, coin_reward: coins, target_value: target, frequency })
+          .select()
+          .single()
 
-      if (questError) throw questError
+        if (questError) throw questError
 
-      // 2. Distribui para todos os colaboradores ativos
-      const employeeQuests = employees.map(emp => ({
-        employee_id: emp.id,
-        quest_id: newQuest.id,
-        progress: 0,
-        completed: false
-      }))
+        // 2. Distribui para todos os colaboradores ativos
+        const employeeQuests = employees.map(emp => ({
+          employee_id: emp.id,
+          quest_id: newQuest.id,
+          progress: 0,
+          completed: false
+        }))
 
-      if (employeeQuests.length > 0) {
-        const { error: eqError } = await supabase.from('employee_quests').insert(employeeQuests)
-        if (eqError) throw eqError
+        if (employeeQuests.length > 0) {
+          const { error: eqError } = await supabase.from('employee_quests').insert(employeeQuests)
+          if (eqError) throw eqError
+        }
+
+        toast.success('Missão criada e distribuída para todos!')
       }
 
-      toast.success('Missão criada e distribuída para todos!')
-      setName('')
-      setDescription('')
+      resetForm()
       void fetchData()
     } catch (err) {
       console.error(err)
-      toast.error('Erro ao criar missão.')
+      toast.error('Erro ao salvar missão.')
     } finally {
       setCreating(false)
     }
@@ -179,9 +226,17 @@ export default function AdminQuests() {
         
         {/* Painel Esquerdo baseado na Tab */}
         {activeTab === 'create' ? (
-          <GlassCard className="p-6">
+          <GlassCard className="p-6 relative">
+            {editingId && (
+              <button 
+                onClick={resetForm} 
+                className="absolute top-6 right-6 text-slate-400 hover:text-white flex items-center gap-1 text-sm bg-slate-800 px-3 py-1.5 rounded-lg"
+              >
+                <X className="w-4 h-4" /> Cancelar
+              </button>
+            )}
             <h2 className="text-xl font-outfit font-bold text-white mb-6 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-higame-purple" /> Nova Missão Global
+              <Plus className="w-5 h-5 text-higame-purple" /> {editingId ? 'Editar Missão' : 'Nova Missão Global'}
             </h2>
             <form onSubmit={handleCreateAndDistribute} className="space-y-4">
               <div>
@@ -206,7 +261,7 @@ export default function AdminQuests() {
               </div>
 
               <button disabled={creating} type="submit" className="w-full btn-primary py-3 mt-4 flex justify-center items-center gap-2">
-                {creating ? 'Distribuindo...' : <><Users className="w-5 h-5" /> Publicar para {employees.length} Colaboradores</>}
+                {creating ? 'Salvando...' : editingId ? 'Salvar Alterações' : <><Users className="w-5 h-5" /> Publicar para {employees.length} Colaboradores</>}
               </button>
             </form>
           </GlassCard>
@@ -254,21 +309,40 @@ export default function AdminQuests() {
             ) : (
               quests.map(q => (
                 <div key={q.id} className="p-4 bg-slate-900/50 border border-white/5 rounded-xl flex justify-between items-center opacity-80 hover:opacity-100 transition-opacity">
-                  <div>
-                    <h3 className="font-outfit font-bold text-white text-sm">{q.name}</h3>
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h3 className="font-outfit font-bold text-white text-sm truncate">{q.name}</h3>
                     <p className="text-xs font-inter text-slate-400 mt-1 truncate max-w-[200px]">{q.description}</p>
                   </div>
-                  <div className="text-right">
-                    <span className="block text-[10px] font-bold text-higame-purple bg-higame-purple/10 px-2 py-0.5 rounded mb-1">+{q.xp_reward} XP</span>
-                    <span className="block text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">+{q.coin_reward} HC</span>
+                  <div className="text-right flex items-center gap-3">
+                    <div>
+                      <span className="block text-[10px] font-bold text-higame-purple bg-higame-purple/10 px-2 py-0.5 rounded mb-1">+{q.xp_reward} XP</span>
+                      <span className="block text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">+{q.coin_reward} HC</span>
+                    </div>
+                    <div className="flex flex-col gap-1 border-l border-white/10 pl-3">
+                      <button onClick={() => startEditing(q)} className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors" title="Editar">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setConfirmDelete(q)} className="p-1.5 text-slate-400 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors" title="Excluir">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
             )}
           </div>
         </GlassCard>
-
       </div>
+
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        title="Excluir Missão?"
+        description={`Tem certeza que deseja excluir permanentemente a missão "${confirmDelete?.name}"? Isso a removerá do sistema e do histórico dos jogadores.`}
+        confirmLabel="Excluir"
+        variant="danger"
+        onConfirm={() => confirmDelete && handleDeleteQuest(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }
