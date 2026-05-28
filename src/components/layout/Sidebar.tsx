@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Trophy, History, User,
   Users, Calendar, Settings, BarChart3,
-  ClipboardList, Store, Award, Target, Users2, Coins
+  ClipboardList, Store, Award, Target, Users2, Coins,
+  LogOut, Zap, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
