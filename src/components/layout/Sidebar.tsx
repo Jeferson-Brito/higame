@@ -129,32 +129,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* User + Logout */}
       <div className="px-3 py-4 border-t border-higame-border flex-shrink-0 space-y-1">
-        {/* Perfil */}
-        <div className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-xl',
-          !collapsed && 'bg-higame-surface2'
-        )}>
-          <div className="w-8 h-8 rounded-lg bg-gradient-higame flex items-center justify-center flex-shrink-0 text-xs font-outfit font-bold text-white">
-            {profile?.full_name?.slice(0, 2).toUpperCase() ?? 'HG'}
-          </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-xs font-outfit font-semibold text-higame-text truncate">
-                  {profile?.full_name ?? 'Usuário'}
-                </p>
-                <p className="text-xs font-inter text-higame-muted capitalize">
-                  {profile?.role === 'admin' ? 'Administrador' : profile?.position ?? 'Colaborador'}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
         {/* Logout */}
         <button
