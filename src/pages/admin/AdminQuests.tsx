@@ -195,6 +195,13 @@ export default function AdminQuests() {
         type: 'quest_completed'
       })
 
+      // 4. Feed social
+      await supabase.from('feed_events').insert({
+        profile_id: selectedEmp,
+        event_type: 'quest_completed',
+        event_data: { quest_name: questDef.name, xp_reward: questDef.xp_reward }
+      })
+
       toast.success('Missão concluída com sucesso! XP e Moedas entregues.')
       setSelectedEmp('')
       setSelectedQuest('')

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { getAppSettings } from '@/lib/ranking'
+import { AvatarFrame } from '@/components/ui/AvatarFrame'
 import toast from 'react-hot-toast'
 
 export function Navbar() {
@@ -174,22 +175,21 @@ export function Navbar() {
                        transition-all duration-200"
           >
             {/* Avatar */}
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.full_name}
-                className="w-7 h-7 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-lg bg-gradient-higame flex items-center justify-center
-                              text-white font-outfit font-bold text-xs">
-                {getInitials(profile?.full_name ?? 'HG')}
-              </div>
-            )}
-            <div className="hidden sm:flex flex-col items-start min-w-0">
+            <AvatarFrame 
+              avatarUrl={profile?.avatar_url}
+              fullName={profile?.full_name || 'Usuário'}
+              size="sm"
+              frameRarity={profile?.active_frame?.rarity}
+            />
+            <div className="hidden sm:flex flex-col items-start min-w-0 ml-1">
               <span className="text-xs font-outfit font-semibold text-higame-text leading-tight truncate max-w-[120px]">
                 {profile?.full_name ?? 'Usuário'}
               </span>
+              {profile?.active_title && (
+                <span className="text-[9px] font-bold text-higame-purple tracking-widest uppercase">
+                  {profile.active_title.name}
+                </span>
+              )}
               <span className="text-[10px] font-inter text-higame-muted capitalize">
                 {profile?.role === 'admin' ? 'Admin' : profile?.position ?? 'Colaborador'}
               </span>

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import type { KpiTier } from '@/types'
+export { AvatarFrame } from './AvatarFrame'
 
 // ============================================================
 // GlassCard

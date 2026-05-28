@@ -6,6 +6,8 @@ import { getInitials } from '@/lib/utils'
 import type { Season, KpiTier } from '@/types'
 import { Trophy, Zap, Star } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { AvatarFrame } from '@/components/ui/AvatarFrame'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface RankingEntry {
   id: string
@@ -20,6 +22,8 @@ interface RankingEntry {
     avatar_url: string | null
     position: string | null
     team: string | null
+    active_title?: { name: string } | null
+    active_frame?: { rarity: string } | null
   }
 }
 
@@ -40,11 +44,21 @@ export default function Ranking() {
 
       const { data } = await supabase
         .from('rankings')
-        .select('*, profile:profiles(id, full_name, avatar_url, position, team)')
+        .select('*, profile:profiles(id, full_name, avatar_url, position, team, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity))')
         .eq('season_id', seasonData.id)
         .order('rank_position', { ascending: true })
 
-      setRankings((data ?? []) as RankingEntry[])
+      // Ajusta o array do supabase
+      const mappedData = (data ?? []).map((r: any) => ({
+        ...r,
+        profile: {
+          ...r.profile,
+          active_title: Array.isArray(r.profile.active_title) ? r.profile.active_title[0] : r.profile.active_title,
+          active_frame: Array.isArray(r.profile.active_frame) ? r.profile.active_frame[0] : r.profile.active_frame,
+        }
+      }))
+
+      setRankings(mappedData as RankingEntry[])
     } finally {
       setLoading(false)
     }
@@ -108,18 +122,14 @@ export default function Ranking() {
                     >
                       {/* Avatar */}
                       <div className={`relative ${isFirst ? 'animate-float' : ''}`}>
-                        {entry.profile.avatar_url ? (
-                          <img
-                            src={entry.profile.avatar_url}
-                            alt={entry.profile.full_name}
-                            className={`rounded-2xl object-cover border-2 ${borders[actualRank as 1|2|3]} ${glows[actualRank as 1|2|3]} ${isFirst ? 'w-20 h-20' : 'w-16 h-16'}`}
-                          />
-                        ) : (
-                          <div className={`rounded-2xl bg-gradient-higame flex items-center justify-center font-outfit font-bold text-white border-2 ${borders[actualRank as 1|2|3]} ${glows[actualRank as 1|2|3]} ${isFirst ? 'w-20 h-20 text-2xl' : 'w-16 h-16 text-lg'}`}>
-                            {getInitials(entry.profile.full_name)}
-                          </div>
-                        )}
-                        <span className="absolute -top-2 -right-2 text-xl">
+                        <AvatarFrame 
+                          avatarUrl={entry.profile.avatar_url}
+                          fullName={entry.profile.full_name}
+                          size={isFirst ? 'xl' : 'lg'}
+                          frameRarity={(entry.profile.active_frame?.rarity as any) || undefined}
+                          className="shadow-2xl"
+                        />
+                        <span className="absolute -top-2 -right-2 text-xl z-20 drop-shadow-lg">
                           {emojis[actualRank as 1|2|3]}
                         </span>
                         {isMe && (
@@ -130,11 +140,16 @@ export default function Ranking() {
                       </div>
 
                       {/* Nome */}
-                      <div className="text-center">
-                        <p className={`font-outfit font-bold text-higame-text ${isFirst ? 'text-sm' : 'text-xs'} max-w-[80px] truncate`}>
+                      <div className="text-center mt-2">
+                        <p className={`font-outfit font-bold text-higame-text ${isFirst ? 'text-sm' : 'text-xs'} max-w-[90px] truncate`}>
                           {entry.profile.full_name.split(' ')[0]}
                         </p>
-                        <p className="text-xs font-outfit font-bold text-higame-purple">
+                        {entry.profile.active_title && (
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-amber-400 mt-0.5 line-clamp-1">
+                            {entry.profile.active_title.name}
+                          </p>
+                        )}
+                        <p className="text-xs font-outfit font-bold text-higame-purple mt-1">
                           {entry.total_xp.toLocaleString()} XP
                         </p>
                       </div>
@@ -187,19 +202,25 @@ export default function Ranking() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            {entry.profile.avatar_url ? (
-                              <img src={entry.profile.avatar_url} alt={entry.profile.full_name} className="w-9 h-9 rounded-xl object-cover" />
-                            ) : (
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-outfit font-bold text-white ${isTop3 ? 'bg-gradient-higame' : 'bg-higame-surface3'}`}>
-                                {getInitials(entry.profile.full_name)}
-                              </div>
-                            )}
+                            <AvatarFrame 
+                              avatarUrl={entry.profile.avatar_url}
+                              fullName={entry.profile.full_name}
+                              size="md"
+                              frameRarity={(entry.profile.active_frame?.rarity as any) || undefined}
+                            />
                             <div>
                               <p className="text-sm font-outfit font-semibold text-higame-text flex items-center gap-1">
                                 {entry.profile.full_name}
                                 {isMe && <span className="text-[9px] bg-higame-purple text-white px-1 rounded font-inter">Você</span>}
                               </p>
-                              <p className="text-xs font-inter text-higame-muted">{entry.profile.position ?? ''}</p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                {entry.profile.active_title && (
+                                  <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest border border-amber-500/30 bg-amber-500/10 px-1 rounded">
+                                    {entry.profile.active_title.name}
+                                  </span>
+                                )}
+                                <p className="text-xs font-inter text-higame-muted">{entry.profile.position ?? ''}</p>
+                              </div>
                             </div>
                           </div>
                         </td>

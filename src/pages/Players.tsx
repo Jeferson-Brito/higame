@@ -5,6 +5,7 @@ import { PageHeader, GlassCard, Skeleton } from '@/components/ui/index'
 import { getInitials, calculateLevel } from '@/lib/utils'
 import { getAppSettings } from '@/lib/ranking'
 import { Users, Search, Star, Trophy } from 'lucide-react'
+import { AvatarFrame } from '@/components/ui/AvatarFrame'
 
 interface Player {
   id: string
@@ -13,6 +14,8 @@ interface Player {
   team: string | null
   total_xp: number
   level: number
+  active_title?: { name: string } | null
+  active_frame?: { rarity: string } | null
 }
 
 export default function Players() {
@@ -30,7 +33,7 @@ export default function Players() {
       // Buscar perfis ativos (apenas employees)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, team')
+        .select('id, full_name, avatar_url, team, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity)')
         .eq('role', 'employee')
         .eq('is_active', true)
         .order('full_name', { ascending: true })
@@ -55,6 +58,8 @@ export default function Players() {
         const total_xp = r?.total_xp ?? 0
         return {
           ...p,
+          active_title: Array.isArray(p.active_title) ? p.active_title[0] : p.active_title,
+          active_frame: Array.isArray(p.active_frame) ? p.active_frame[0] : p.active_frame,
           total_xp,
           level: calculateLevel(total_xp, xpPerLevel)
         }
@@ -118,19 +123,23 @@ export default function Players() {
               <div className="absolute inset-0 bg-gradient-to-br from-higame-purple/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
               <div className="flex items-center gap-4 mb-4">
-                {player.avatar_url ? (
-                  <img src={player.avatar_url} alt={player.full_name} className="w-14 h-14 rounded-xl object-cover ring-1 ring-white/10 group-hover:ring-higame-purple/50 transition-all" />
-                ) : (
-                  <div className="w-14 h-14 rounded-xl bg-gradient-higame flex items-center justify-center text-lg font-outfit font-black text-white shadow-glow-purple">
-                    {getInitials(player.full_name)}
-                  </div>
-                )}
+                <AvatarFrame 
+                  avatarUrl={player.avatar_url}
+                  fullName={player.full_name}
+                  size="lg"
+                  frameRarity={(player.active_frame?.rarity as any) || undefined}
+                />
                 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-outfit font-bold text-white text-sm truncate group-hover:text-higame-purple transition-colors">
                     {player.full_name}
                   </h3>
-                  <p className="text-xs text-slate-400 truncate">
+                  {player.active_title && (
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500 my-0.5 line-clamp-1">
+                      {player.active_title.name}
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-400 truncate mt-0.5">
                     {player.team || 'Sem time'}
                   </p>
                 </div>

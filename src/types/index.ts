@@ -29,6 +29,8 @@ export interface Profile {
   active_title_id: string | null
   active_frame_id: string | null
   active_banner_id: string | null
+  active_title?: { name: string } | null
+  active_frame?: { rarity: RarityTier } | null
   is_active: boolean
   deleted_at: string | null
   created_at: string

@@ -4,13 +4,14 @@ import { GlassCard, PageHeader, RankBadge, EmptyState, Skeleton } from '@/compon
 import type { Season } from '@/types'
 import { BarChart3, Zap } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { AvatarFrame } from '@/components/ui/AvatarFrame'
 
 interface AdminRankingEntry {
   id: string
   rank_position: number | null
   total_xp: number
   total_score: number
-  profile: { full_name: string; position: string | null; avatar_url: string | null }
+  profile: { full_name: string; position: string | null; avatar_url: string | null; active_title?: { name: string } | null; active_frame?: { rarity: string } | null }
 }
 
 export default function AdminRanking() {
@@ -35,9 +36,20 @@ export default function AdminRanking() {
     }
 
     setLoading(true)
-    const { data } = await supabase.from('rankings').select('*, profile:profiles(full_name, position, avatar_url)')
+    const { data } = await supabase.from('rankings').select('*, profile:profiles(full_name, position, avatar_url, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity))')
       .eq('season_id', selectedSeason).order('rank_position', { ascending: true })
-    setRankings((data ?? []) as AdminRankingEntry[])
+      
+    // Ajusta o array do supabase
+    const mappedData = (data ?? []).map((r: any) => ({
+      ...r,
+      profile: {
+        ...r.profile,
+        active_title: Array.isArray(r.profile.active_title) ? r.profile.active_title[0] : r.profile.active_title,
+        active_frame: Array.isArray(r.profile.active_frame) ? r.profile.active_frame[0] : r.profile.active_frame,
+      }
+    }))
+      
+    setRankings(mappedData as AdminRankingEntry[])
     setLoading(false)
   }, [selectedSeason])
 
@@ -79,12 +91,22 @@ export default function AdminRanking() {
                     <td className="px-4 py-3"><RankBadge rank={entry.rank_position} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-higame flex items-center justify-center text-xs font-outfit font-bold text-white">
-                          {getInitials(entry.profile.full_name)}
-                        </div>
+                        <AvatarFrame 
+                          avatarUrl={entry.profile.avatar_url}
+                          fullName={entry.profile.full_name}
+                          size="sm"
+                          frameRarity={(entry.profile.active_frame?.rarity as any) || undefined}
+                        />
                         <div>
                           <p className="text-sm font-outfit font-semibold text-higame-text">{entry.profile.full_name}</p>
-                          <p className="text-xs font-inter text-higame-muted">{entry.profile.position ?? ''}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {entry.profile.active_title && (
+                              <span className="text-[9px] font-bold text-amber-500 uppercase tracking-widest border border-amber-500/30 bg-amber-500/10 px-1 rounded">
+                                {entry.profile.active_title.name}
+                              </span>
+                            )}
+                            <p className="text-xs font-inter text-higame-muted">{entry.profile.position ?? ''}</p>
+                          </div>
                         </div>
                       </div>
                     </td>

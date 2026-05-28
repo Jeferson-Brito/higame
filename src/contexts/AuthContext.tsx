@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity)')
         .eq('id', userId)
         .maybeSingle()
 
@@ -82,9 +82,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null
       }
 
-      const nextProfile = data as Profile
-      setProfile(nextProfile)
-      return nextProfile
+      const formattedProfile = {
+        ...data,
+        active_title: data?.active_title ? (Array.isArray(data.active_title) ? data.active_title[0] : data.active_title) : null,
+        active_frame: data?.active_frame ? (Array.isArray(data.active_frame) ? data.active_frame[0] : data.active_frame) : null,
+      } as Profile
+
+      // --- Lógica de Daily Streak ---
+      if (formattedProfile.role === 'employee') {
+        const now = new Date()
+        const lastLoginStr = formattedProfile.last_login
+        
+        let needsUpdate = false
+        let newStreak = formattedProfile.current_streak || 0
+        let newLongest = formattedProfile.longest_streak || 0
+        
+        if (!lastLoginStr) {
+          needsUpdate = true
+          newStreak = 1
+          newLongest = 1
+        } else {
+          const lastLoginDate = new Date(lastLoginStr)
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          const lastLoginDay = new Date(lastLoginDate.getFullYear(), lastLoginDate.getMonth(), lastLoginDate.getDate())
+          
+          const diffTime = today.getTime() - lastLoginDay.getTime()
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+          
+          if (diffDays === 1) {
+            // Logou no dia seguinte consecutivo
+            needsUpdate = true
+            newStreak += 1
+            if (newStreak > newLongest) newLongest = newStreak
+          } else if (diffDays > 1) {
+            // Quebrou o streak
+            needsUpdate = true
+            newStreak = 1
+          }
+        }
+        
+        if (needsUpdate) {
+          formattedProfile.current_streak = newStreak
+          formattedProfile.longest_streak = newLongest
+          formattedProfile.last_login = now.toISOString()
+          
+          // Fire and forget update
+          supabase.from('profiles').update({
+            current_streak: newStreak,
+            longest_streak: newLongest,
+            last_login: now.toISOString()
+          }).eq('id', userId).then()
+          
+          // Evento de feed para marcos importantes de streak (ex: múltiplos de 7)
+          if (newStreak > 1 && newStreak % 7 === 0) {
+            supabase.from('feed_events').insert({
+              profile_id: userId,
+              event_type: 'streak_milestone',
+              event_data: { streak: newStreak }
+            }).then()
+          }
+        }
+      }
+      // ------------------------------
+
+      setProfile(formattedProfile)
+      return formattedProfile
     } catch (err) {
       console.error('Erro inesperado ao buscar perfil:', err)
       await forceSignOut()

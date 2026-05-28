@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -6,7 +6,12 @@ import { getAppSettings } from '@/lib/ranking'
 import { calculateLevel } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 import type { Season, Ranking, AppSettings } from '@/types'
-import { Flame, Target, Trophy, Star, ChevronRight, CheckCircle2, Lock, Shield, Crown } from 'lucide-react'
+import { Flame, Target, Trophy, Star, ChevronRight, CheckCircle2, Users } from 'lucide-react'
+import { AvatarFrame } from '@/components/ui/AvatarFrame'
+import { StreakCard } from '@/components/StreakCard'
+import { SocialFeed } from '@/components/SocialFeed'
+import { PremiumToastContainer } from '@/components/PremiumToast'
+import { usePremiumToasts } from '@/hooks/usePremiumToasts'
 import toast from 'react-hot-toast'
 
 // Tipos para os retornos do DB
@@ -49,6 +54,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [ranking, setRanking] = useState<Ranking | null>(null)
   const [settings, setSettings] = useState<AppSettings | null>(null)
+  const prevLevelRef = useRef<number | null>(null)
+  const { toasts, dismissToast, showLevelUp } = usePremiumToasts()
   
   // Real data state
   const [quests, setQuests] = useState<EmployeeQuest[]>([])
@@ -72,14 +79,16 @@ export default function Dashboard() {
       setSettings(settingsData)
       const season = seasonData.data as Season | null
 
+      let rankingData: any = null
       if (season) {
-        const rankingData = await supabase
+        const result = await supabase
           .from('rankings')
           .select('*')
           .eq('employee_id', profileId)
           .eq('season_id', season.id)
           .single()
-        setRanking(rankingData.data as Ranking | null)
+        rankingData = result
+        setRanking(result.data as Ranking | null)
       }
 
       // Fetch Quests (do dia/semana que o colaborador precisa fazer)
@@ -118,6 +127,17 @@ export default function Dashboard() {
 
       setBadges(mappedBadges)
 
+      // Detectar Level Up
+      const xpPerLevelCalc = settingsData.xp_per_level
+      const rankDataFetched = rankingData?.data as Ranking | null
+      if (rankDataFetched) {
+        const newLevel = calculateLevel(rankDataFetched.total_xp, xpPerLevelCalc)
+        if (prevLevelRef.current !== null && newLevel > prevLevelRef.current) {
+          showLevelUp(newLevel)
+        }
+        prevLevelRef.current = newLevel
+      }
+
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err)
     } finally {
@@ -143,9 +163,12 @@ export default function Dashboard() {
   const currentLevelXp = totalXp % xpPerLevel
   const progressPercent = Math.min(100, Math.max(0, (currentLevelXp / xpPerLevel) * 100))
   const streak = profile?.current_streak ?? 0
+  const longestStreak = profile?.longest_streak ?? 0
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
+      {/* Premium Toast Container */}
+      <PremiumToastContainer toasts={toasts} onDismiss={dismissToast} />
       
       {/* 1. HERO SECTION */}
       <motion.div 
@@ -161,29 +184,33 @@ export default function Dashboard() {
           
           <div className="relative group cursor-pointer">
             <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-higame-neon via-higame-purple to-higame-neon opacity-70 blur-md group-hover:opacity-100 transition duration-500 animate-pulse-glow" />
-            <div className="relative w-32 h-32 rounded-3xl overflow-hidden border-2 border-white/20 bg-slate-900">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-blurple text-4xl font-outfit font-black text-white">
-                  {profile?.full_name?.slice(0, 2).toUpperCase() ?? 'HG'}
-                </div>
-              )}
-            </div>
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-slate-950 border-2 border-higame-neon text-white px-4 py-1 rounded-full font-outfit font-black text-lg shadow-glow-neon flex items-center gap-1">
+            <AvatarFrame 
+              avatarUrl={profile?.avatar_url}
+              fullName={profile?.full_name || 'Usuário'}
+              size="xl"
+              frameRarity={profile?.active_frame?.rarity}
+              className="relative z-10"
+            />
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 bg-slate-950 border-2 border-higame-neon text-white px-4 py-1 rounded-full font-outfit font-black text-lg shadow-glow-neon flex items-center gap-1">
               <Star className="w-4 h-4 text-higame-neon fill-higame-neon" />
               {level}
             </div>
           </div>
 
           <div className="flex-1 text-center md:text-left mt-2">
+            {/* Streak badge compacto no hero */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">
-              <Flame className="w-3.5 h-3.5" /> Streak: {streak} dias
+              <Flame className="w-3.5 h-3.5" /> {streak > 0 ? `🔥 ${streak} dias em sequência` : 'Comece sua sequência!'}
             </div>
             
-            <h1 className="text-3xl sm:text-4xl font-outfit font-black text-white mb-1 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-outfit font-black text-white mb-1 tracking-tight flex items-center gap-3">
               {profile?.full_name ?? 'Colaborador'}
             </h1>
+            {profile?.active_title && (
+              <span className="inline-block mt-1 mb-2 px-2 py-0.5 rounded text-xs font-bold tracking-widest uppercase bg-higame-purple/20 text-higame-purple border border-higame-purple/30">
+                {profile.active_title.name}
+              </span>
+            )}
             <p className="text-higame-neon font-medium text-lg mb-6">{profile?.position ?? 'Sem Cargo'}</p>
 
             <div className="max-w-xl">
@@ -327,6 +354,29 @@ export default function Dashboard() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* 4. STREAK + FEED SOCIAL */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Streak Card */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 px-1">
+            <Flame className="w-6 h-6 text-orange-400" />
+            <h2 className="text-2xl font-outfit font-bold text-white">Minha Sequência</h2>
+          </div>
+          <StreakCard currentStreak={streak} longestStreak={longestStreak} />
+        </div>
+
+        {/* Feed Social */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 px-1">
+            <Users className="w-6 h-6 text-higame-purple" />
+            <h2 className="text-2xl font-outfit font-bold text-white">Atividade da Equipe</h2>
+          </div>
+          <div className="glass-card p-4">
+            <SocialFeed limit={12} />
+          </div>
+        </div>
       </div>
 
     </div>
