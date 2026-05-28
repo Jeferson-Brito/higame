@@ -12,6 +12,7 @@ import Dashboard from '@/pages/Dashboard'
 import Ranking from '@/pages/Ranking'
 import Seasons from '@/pages/Seasons'
 import Profile from '@/pages/Profile'
+import Players from '@/pages/Players'
 import Store from '@/pages/Store'
 import Badges from '@/pages/Badges'
 
@@ -45,6 +46,8 @@ export default function App() {
             <Route path="ranking" element={<Ranking />} />
             <Route path="seasons" element={<Seasons />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="players" element={<Players />} />
+            <Route path="players/:id" element={<Profile />} />
             <Route path="store" element={<Store />} />
             <Route path="badges" element={<Badges />} />
           </Route>

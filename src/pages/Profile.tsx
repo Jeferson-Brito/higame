@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { GlassCard, PageHeader, TierBadge, Skeleton } from '@/components/ui/index'
@@ -6,7 +7,7 @@ import { XPProgressBar } from '@/components/XPProgressBar'
 import { getInitials, calculateLevel } from '@/lib/utils'
 import { getAppSettings } from '@/lib/ranking'
 import type { Ranking, EmployeeResult, KpiDefinition } from '@/types'
-import { Zap, Star, Trophy, Edit2, Award } from 'lucide-react'
+import { Zap, Star, Trophy, Edit2, Award, ArrowLeft } from 'lucide-react'
 
 // Estilos de raridade para a borda/fundo da medalha
 const RARITY_COLORS: Record<string, string> = {
@@ -17,20 +18,37 @@ const RARITY_COLORS: Record<string, string> = {
   mythic: 'bg-red-900/50 text-red-400 border-red-500 shadow-glow-red',
 }
 
+interface ProfileData {
+  id: string
+  full_name: string
+  avatar_url: string | null
+  position: string | null
+  team: string | null
+}
+
 export default function Profile() {
-  const { profile, refreshProfile } = useAuth()
+  const { id: urlId } = useParams() // Captura o ID da URL se existir (ex: /players/123)
+  const { profile: loggedProfile, refreshProfile } = useAuth()
+  const navigate = useNavigate()
+  
+  // O alvo do perfil é o ID da URL, ou o próprio logado se não tiver URL param
+  const targetId = urlId || loggedProfile?.id
+  const isOwner = !urlId || urlId === loggedProfile?.id
+
+  const [targetProfile, setTargetProfile] = useState<ProfileData | null>(null)
   const [ranking, setRanking] = useState<Ranking | null>(null)
   const [results, setResults] = useState<(EmployeeResult & { kpi: KpiDefinition })[]>([])
   const [badges, setBadges] = useState<any[]>([])
   const [xpPerLevel, setXpPerLevel] = useState(1000)
   const [loading, setLoading] = useState(true)
+  
+  // Edição
   const [editName, setEditName] = useState(false)
-  const [newName, setNewName] = useState(profile?.full_name ?? '')
+  const [newName, setNewName] = useState('')
   const [saving, setSaving] = useState(false)
-  const profileId = profile?.id
 
   const fetchData = useCallback(async () => {
-    if (!profileId) {
+    if (!targetId) {
       setLoading(false)
       return
     }
@@ -40,6 +58,17 @@ export default function Profile() {
       const settings = await getAppSettings()
       setXpPerLevel(settings.xp_per_level)
 
+      // 1. Busca os dados base do perfil alvo
+      const { data: profData } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, position, team')
+        .eq('id', targetId)
+        .single()
+      
+      setTargetProfile(profData as ProfileData)
+      if (profData) setNewName(profData.full_name)
+
+      // 2. Busca temporada ativa
       const { data: seasonData } = await supabase
         .from('seasons').select('id').eq('status', 'active').single()
 
@@ -48,36 +77,40 @@ export default function Profile() {
         const { data: badgesData } = await supabase
           .from('employee_badges')
           .select('id, unlocked_at, badge:badges(id, name, description, icon, rarity)')
-          .eq('employee_id', profileId)
+          .eq('employee_id', targetId)
           .order('unlocked_at', { ascending: false })
           
         setBadges(badgesData ?? [])
         return
       }
 
+      // 3. Busca XP, Resultados e Medalhas
       const [rankData, resultsData, badgesData] = await Promise.all([
-        supabase.from('rankings').select('*').eq('employee_id', profileId).eq('season_id', seasonData.id).single(),
-        supabase.from('employee_results').select('*, kpi:kpi_definitions(*)').eq('employee_id', profileId).eq('season_id', seasonData.id),
-        supabase.from('employee_badges').select('id, unlocked_at, badge:badges(id, name, description, icon, rarity)').eq('employee_id', profileId).order('unlocked_at', { ascending: false })
+        supabase.from('rankings').select('*').eq('employee_id', targetId).eq('season_id', seasonData.id).single(),
+        supabase.from('employee_results').select('*, kpi:kpi_definitions(*)').eq('employee_id', targetId).eq('season_id', seasonData.id),
+        supabase.from('employee_badges').select('id, unlocked_at, badge:badges(id, name, description, icon, rarity)').eq('employee_id', targetId).order('unlocked_at', { ascending: false })
       ])
 
       setRanking(rankData.data as Ranking | null)
       setResults((resultsData.data ?? []) as (EmployeeResult & { kpi: KpiDefinition })[])
       setBadges(badgesData.data ?? [])
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false)
     }
-  }, [profileId])
+  }, [targetId])
 
   useEffect(() => {
     void fetchData()
   }, [fetchData])
 
   async function saveName() {
-    if (!newName.trim() || !profile?.id) return
+    if (!newName.trim() || !targetId || !isOwner) return
     setSaving(true)
-    await supabase.from('profiles').update({ full_name: newName.trim() }).eq('id', profile.id)
-    await refreshProfile()
+    await supabase.from('profiles').update({ full_name: newName.trim() }).eq('id', targetId)
+    await refreshProfile() // Atualiza o contexto global se for o dono
+    setTargetProfile(prev => prev ? { ...prev, full_name: newName.trim() } : null)
     setEditName(false)
     setSaving(false)
   }
@@ -85,29 +118,43 @@ export default function Profile() {
   const totalXp = ranking?.total_xp ?? 0
   const level = calculateLevel(totalXp, xpPerLevel)
 
-  if (loading) return <Skeleton className="h-96 w-full" />
+  if (loading) return <Skeleton className="h-96 w-full max-w-2xl mx-auto" />
+
+  if (!targetProfile) return (
+    <div className="text-center py-20 text-slate-400">
+      <p>Perfil não encontrado.</p>
+    </div>
+  )
 
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl mx-auto pb-10">
-      <PageHeader title="Meu Perfil" />
+      
+      {/* Se não for o dono, mostra um botão de Voltar */}
+      {!isOwner && (
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-higame-muted hover:text-white transition-colors text-sm font-bold">
+          <ArrowLeft className="w-4 h-4" /> Voltar
+        </button>
+      )}
+
+      <PageHeader title={isOwner ? "Meu Perfil" : "Perfil do Jogador"} />
 
       {/* Card principal */}
       <GlassCard className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-6">
           {/* Avatar */}
           <div className="flex-shrink-0">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.full_name} className="w-24 h-24 rounded-2xl object-cover ring-2 ring-higame-purple/40" />
+            {targetProfile.avatar_url ? (
+              <img src={targetProfile.avatar_url} alt={targetProfile.full_name} className="w-24 h-24 rounded-2xl object-cover ring-2 ring-higame-purple/40" />
             ) : (
               <div className="w-24 h-24 rounded-2xl bg-gradient-higame flex items-center justify-center text-3xl font-outfit font-black text-white shadow-glow-purple">
-                {getInitials(profile?.full_name ?? 'HG')}
+                {getInitials(targetProfile.full_name ?? 'HG')}
               </div>
             )}
           </div>
 
           {/* Info */}
           <div className="flex-1">
-            {editName ? (
+            {editName && isOwner ? (
               <div className="flex gap-2 mb-2">
                 <input
                   value={newName}
@@ -122,14 +169,16 @@ export default function Profile() {
               </div>
             ) : (
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-xl font-outfit font-bold text-higame-text">{profile?.full_name}</h2>
-                <button onClick={() => { setNewName(profile?.full_name ?? ''); setEditName(true) }} className="text-higame-muted hover:text-higame-text transition-colors">
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
+                <h2 className="text-xl font-outfit font-bold text-higame-text">{targetProfile.full_name}</h2>
+                {isOwner && (
+                  <button onClick={() => { setNewName(targetProfile.full_name ?? ''); setEditName(true) }} className="text-higame-muted hover:text-higame-text transition-colors">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             )}
-            <p className="text-sm font-inter text-higame-muted mb-1">{profile?.position ?? 'Colaborador'}</p>
-            {profile?.team && <p className="text-sm font-inter text-higame-muted">{profile.team}</p>}
+            <p className="text-sm font-inter text-higame-muted mb-1">{targetProfile.position ?? 'Colaborador'}</p>
+            {targetProfile.team && <p className="text-sm font-inter text-higame-muted">{targetProfile.team}</p>}
 
             <div className="flex gap-4 mt-3">
               <div>
@@ -162,12 +211,12 @@ export default function Profile() {
       {/* Coleção de Medalhas */}
       <GlassCard className="p-6">
         <h3 className="font-outfit font-bold text-higame-text mb-4 flex items-center gap-2">
-          <Award className="w-5 h-5 text-amber-400" /> Coleção de Medalhas
+          <Award className="w-5 h-5 text-amber-400" /> {isOwner ? 'Minha Coleção' : 'Coleção do Jogador'}
         </h3>
         
         {badges.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-6 border border-dashed border-white/10 rounded-xl">
-            Você ainda não conquistou nenhuma medalha. Cumpra missões e bata suas metas!
+            Nenhuma medalha conquistada ainda.
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">

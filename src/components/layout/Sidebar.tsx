@@ -17,6 +17,7 @@ import toast from 'react-hot-toast'
 const EMPLOYEE_NAV = [
   { icon: LayoutDashboard, label: 'Dashboard',    to: '/dashboard' },
   { icon: Trophy,          label: 'Ranking',      to: '/ranking' },
+  { icon: Users,           label: 'Jogadores',    to: '/players' },
   { icon: History,         label: 'Temporadas',   to: '/seasons' },
   { icon: User,            label: 'Meu Perfil',   to: '/profile' },
   { icon: Award,           label: 'Medalhas',     to: '/badges' },
