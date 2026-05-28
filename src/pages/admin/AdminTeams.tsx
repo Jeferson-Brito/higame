@@ -301,43 +301,45 @@ export default function AdminTeams() {
           {teams.map(team => {
             const members = teamMembers(team.id)
             return (
-              <GlassCard key={team.id} className="p-6" style={{ borderColor: `${team.color}30` }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: `${team.color}25`, border: `2px solid ${team.color}50` }}>
-                    {team.icon}
+              <div key={team.id} className="rounded-2xl border" style={{ borderColor: `${team.color}50` }}>
+                <GlassCard className="p-6 rounded-2xl border-0">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: `${team.color}25`, border: `2px solid ${team.color}50` }}>
+                      {team.icon}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-outfit font-bold text-white">{team.name}</h2>
+                      <p className="text-xs" style={{ color: team.color }}>{members.length} membro(s)</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg font-outfit font-bold text-white">{team.name}</h2>
-                    <p className="text-xs" style={{ color: team.color }}>{members.length} membro(s)</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {members.length === 0 ? (
+                      <p className="text-slate-500 text-sm col-span-2">Nenhum membro atribuído.</p>
+                    ) : (
+                      members.map(emp => (
+                        <div key={emp.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-white/5">
+                          <div>
+                            <p className="text-sm font-bold text-white">{emp.full_name}</p>
+                            <p className="text-xs text-slate-500">{emp.position ?? '—'}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={emp.team_id ?? ''}
+                              onChange={e => handleAssignTeam(emp.id, e.target.value || null)}
+                              className="input-field text-xs py-1.5 px-2 w-32"
+                            >
+                              <option value="">Sem equipe</option>
+                              {teams.map(t => (
+                                <option key={t.id} value={t.id}>{t.icon} {t.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {members.length === 0 ? (
-                    <p className="text-slate-500 text-sm col-span-2">Nenhum membro atribuído.</p>
-                  ) : (
-                    members.map(emp => (
-                      <div key={emp.id} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-white/5">
-                        <div>
-                          <p className="text-sm font-bold text-white">{emp.full_name}</p>
-                          <p className="text-xs text-slate-500">{emp.position ?? '—'}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={emp.team_id ?? ''}
-                            onChange={e => handleAssignTeam(emp.id, e.target.value || null)}
-                            className="input-field text-xs py-1.5 px-2 w-32"
-                          >
-                            <option value="">Sem equipe</option>
-                            {teams.map(t => (
-                              <option key={t.id} value={t.id}>{t.icon} {t.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </GlassCard>
+                </GlassCard>
+              </div>
             )
           })}
         </div>
