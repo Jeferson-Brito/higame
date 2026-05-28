@@ -146,10 +146,10 @@ export default function Badges() {
                   </span>
                   <div className="flex gap-2">
                     {badge.xp_reward > 0 && (
-                      <span className="text-[10px] font-bold text-higame-purple bg-higame-purple/10 px-2 py-1 rounded">+{badge.xp_reward} XP</span>
+                      <span className="text-[10px] font-bold text-higame-purple bg-higame-purple/10 px-2 py-1 rounded whitespace-nowrap">+{badge.xp_reward} XP</span>
                     )}
                     {badge.coin_reward > 0 && (
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-1 rounded">+{badge.coin_reward} HC</span>
+                      <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-2 py-1 rounded whitespace-nowrap">+{badge.coin_reward} HC</span>
                     )}
                   </div>
                 </div>
