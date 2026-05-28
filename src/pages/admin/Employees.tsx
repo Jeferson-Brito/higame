@@ -130,7 +130,11 @@ export default function AdminEmployees() {
     const { error } = await supabase.from('profiles')
       .update({ deleted_at: new Date().toISOString(), is_active: false })
       .eq('id', emp.id)
-    if (error) { toast.error('Erro ao excluir', { style: TOAST_STYLE }); return }
+    if (error) { 
+      console.error('Delete error:', error)
+      toast.error(`Erro ao excluir: ${error.message}`, { style: TOAST_STYLE })
+      return 
+    }
     toast.success('Colaborador excluído com sucesso', { style: TOAST_STYLE })
     setConfirmDelete(null)
     fetchEmployees()
@@ -236,17 +240,67 @@ export default function AdminEmployees() {
             <h3 className="text-lg font-outfit font-bold text-higame-text">
               {editingId ? 'Editar Colaborador' : 'Novo Colaborador'}
             </h3>
-            {['full_name', ...(editingId ? [] : ['email', 'password']), 'position', 'team', 'avatar_url'].map(field => (
+            
+            {/* Foto de Perfil (Upload) */}
+            <div>
+              <label className="input-label">Foto de Perfil (Avatar)</label>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="w-16 h-16 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {form.avatar_url ? (
+                    <img src={form.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs text-slate-500">Sem foto</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      
+                      const toastId = toast.loading('Enviando foto...', { style: TOAST_STYLE })
+                      try {
+                        const fileExt = file.name.split('.').pop()
+                        const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+                        const filePath = `${fileName}`
+
+                        const { error: uploadError } = await supabase.storage
+                          .from('avatars')
+                          .upload(filePath, file)
+
+                        if (uploadError) throw uploadError
+
+                        const { data: { publicUrl } } = supabase.storage
+                          .from('avatars')
+                          .getPublicUrl(filePath)
+
+                        setForm(f => ({ ...f, avatar_url: publicUrl }))
+                        toast.success('Foto enviada!', { id: toastId, style: TOAST_STYLE })
+                      } catch (err: any) {
+                        console.error(err)
+                        toast.error('Erro ao enviar foto: ' + err.message, { id: toastId, style: TOAST_STYLE })
+                      }
+                    }}
+                    className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-higame-purple/20 file:text-higame-purple hover:file:bg-higame-purple/30 transition-all cursor-pointer"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Recomendado: Imagem quadrada (JPG ou PNG).</p>
+                </div>
+              </div>
+            </div>
+
+            {['full_name', ...(editingId ? [] : ['email', 'password']), 'position', 'team'].map(field => (
               <div key={field}>
                 <label className="input-label capitalize">
-                  {field === 'full_name' ? 'Nome Completo' : field === 'position' ? 'Cargo' : field === 'team' ? 'Equipe' : field === 'avatar_url' ? 'URL da Foto (Avatar)' : field.charAt(0).toUpperCase() + field.slice(1)}
+                  {field === 'full_name' ? 'Nome Completo' : field === 'position' ? 'Cargo' : field === 'team' ? 'Equipe' : field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
                 <input
                   type={field === 'password' ? 'password' : field === 'email' ? 'email' : 'text'}
                   value={form[field as keyof EmployeeForm]}
                   onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                   className="input-field"
-                  placeholder={field === 'full_name' ? 'João Silva' : field === 'email' ? 'joao@empresa.com' : field === 'password' ? 'Min. 6 caracteres' : field === 'avatar_url' ? 'https://...' : ''}
+                  placeholder={field === 'full_name' ? 'João Silva' : field === 'email' ? 'joao@empresa.com' : field === 'password' ? 'Min. 6 caracteres' : ''}
                 />
               </div>
             ))}
