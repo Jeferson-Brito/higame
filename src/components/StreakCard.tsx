@@ -20,7 +20,7 @@ function getStreakLevel(streak: number) {
 export function StreakCard({ currentStreak, longestStreak }: StreakCardProps) {
   const streakInfo = getStreakLevel(currentStreak)
   const nextMilestone = STREAK_MILESTONES.find(m => m > currentStreak) ?? 100
-  const prevMilestone = STREAK_MILESTONES.filter(m => m <= currentStreak).at(-1) ?? 0
+  const prevMilestone = STREAK_MILESTONES.filter(m => m <= currentStreak).slice(-1)[0] ?? 0
   const progressToNext = Math.min(100, ((currentStreak - prevMilestone) / (nextMilestone - prevMilestone)) * 100)
 
   // Gera os foguinhos (máx 14 para não poluir a UI)

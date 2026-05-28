@@ -7,7 +7,6 @@ import type { Season, KpiTier } from '@/types'
 import { Trophy, Zap, Star } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { AvatarFrame } from '@/components/ui/AvatarFrame'
-import { useAuth } from '@/contexts/AuthContext'
 
 interface RankingEntry {
   id: string
