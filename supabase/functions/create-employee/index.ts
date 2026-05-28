@@ -14,6 +14,7 @@ interface CreateEmployeePayload {
   password: string
   position?: string
   team?: string
+  avatar_url?: string | null
   role?: UserRole
 }
 
@@ -124,6 +125,7 @@ Deno.serve(async (req) => {
     role,
     position,
     team,
+    avatar_url: payload.avatar_url || null,
     is_active: true,
     deleted_at: null,
     updated_at: new Date().toISOString(),

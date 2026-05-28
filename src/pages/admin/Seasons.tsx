@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, EmptyState, StatusDot, ConfirmModal } from '@/components/ui/index'
 import type { Season } from '@/types'
-import { Calendar, Plus, Edit2, PlayCircle, XCircle, CheckCircle } from 'lucide-react'
+import { Calendar, Plus, Edit2, PlayCircle, XCircle, CheckCircle, Trash2 } from 'lucide-react'
 import { MONTH_NAMES, SEASON_STATUS_LABEL } from '@/types'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -36,6 +36,7 @@ export default function AdminSeasons() {
   const [form, setForm] = useState<SeasonForm>(getDefaultSeasonForm)
   const [saving, setSaving] = useState(false)
   const [confirmClose, setConfirmClose] = useState<Season | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Season | null>(null)
   const [closing, setClosing] = useState(false)
 
   const fetchSeasons = useCallback(async () => {
@@ -105,6 +106,16 @@ export default function AdminSeasons() {
     } finally {
       setClosing(false)
     }
+  }
+
+  async function handleDelete(season: Season) {
+    const { error } = await supabase.from('seasons')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', season.id)
+    if (error) { toast.error('Erro ao excluir', { style: TOAST_STYLE }); return }
+    toast.success('Temporada excluída', { style: TOAST_STYLE })
+    setConfirmDelete(null)
+    await fetchSeasons()
   }
 
   const statusColors: Record<string, string> = {
@@ -177,6 +188,9 @@ export default function AdminSeasons() {
                       <CheckCircle className="w-3.5 h-3.5" /> Encerrada
                     </span>
                   )}
+                  <button onClick={() => setConfirmDelete(season)} className="btn-ghost p-2 rounded-lg text-higame-muted hover:text-red-400" title="Excluir">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </GlassCard>
             </motion.div>
@@ -228,6 +242,16 @@ export default function AdminSeasons() {
         variant="danger"
         onConfirm={() => confirmClose && handleClose(confirmClose)}
         onCancel={() => setConfirmClose(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        title="Excluir Temporada?"
+        description={`Tem certeza que deseja excluir "${confirmDelete?.name}"? Isso vai ocultar a temporada e seus dados associados.`}
+        confirmLabel="Excluir"
+        variant="danger"
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
       />
     </div>
   )
