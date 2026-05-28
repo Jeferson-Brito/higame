@@ -27,6 +27,7 @@ const ADMIN_NAV = [
   { icon: LayoutDashboard, label: 'Painel',        to: '/admin' },
   { icon: Users,           label: 'Colaboradores', to: '/admin/employees' },
   { icon: Target,          label: 'Missões',       to: '/admin/quests' },
+  { icon: Award,           label: 'Medalhas',      to: '/admin/badges' },
   { icon: Calendar,        label: 'Temporadas',    to: '/admin/seasons' },
   { icon: ClipboardList,   label: 'Resultados',    to: '/admin/results' },
   { icon: Trophy,          label: 'Ranking',       to: '/admin/ranking' },
