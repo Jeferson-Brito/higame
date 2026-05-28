@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, EmptyState, Skeleton, StatusDot, ConfirmModal } from '@/components/ui/index'
 import { getInitials } from '@/lib/utils'
 import type { Profile } from '@/types'
-import { Users, Plus, Edit2, ToggleLeft, ToggleRight, Search } from 'lucide-react'
+import { Users, Plus, Edit2, ToggleLeft, ToggleRight, Search, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
@@ -15,11 +15,12 @@ interface EmployeeForm {
   password: string
   position: string
   team: string
+  avatar_url: string
   role: 'admin' | 'employee'
 }
 
 const EMPTY_FORM: EmployeeForm = {
-  full_name: '', email: '', password: '', position: '', team: '', role: 'employee'
+  full_name: '', email: '', password: '', position: '', team: '', avatar_url: '', role: 'employee'
 }
 
 async function getFunctionErrorMessage(error: unknown) {
@@ -45,6 +46,7 @@ export default function AdminEmployees() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [confirmToggle, setConfirmToggle] = useState<Profile | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Profile | null>(null)
 
   useEffect(() => { fetchEmployees() }, [])
 
@@ -69,6 +71,7 @@ export default function AdminEmployees() {
           full_name: form.full_name,
           position: form.position,
           team: form.team,
+          avatar_url: form.avatar_url || null,
           role: form.role,
         }).eq('id', editingId)
         if (error) throw error
@@ -91,6 +94,7 @@ export default function AdminEmployees() {
             password: form.password,
             position: form.position.trim(),
             team: form.team.trim(),
+            avatar_url: form.avatar_url || null,
             role: form.role,
           },
         })
@@ -122,6 +126,16 @@ export default function AdminEmployees() {
     fetchEmployees()
   }
 
+  async function handleDelete(emp: Profile) {
+    const { error } = await supabase.from('profiles')
+      .update({ deleted_at: new Date().toISOString(), is_active: false })
+      .eq('id', emp.id)
+    if (error) { toast.error('Erro ao excluir', { style: TOAST_STYLE }); return }
+    toast.success('Colaborador excluído com sucesso', { style: TOAST_STYLE })
+    setConfirmDelete(null)
+    fetchEmployees()
+  }
+
   function openEdit(emp: Profile) {
     setForm({
       full_name: emp.full_name,
@@ -129,6 +143,7 @@ export default function AdminEmployees() {
       password: '',
       position: emp.position ?? '',
       team: emp.team ?? '',
+      avatar_url: emp.avatar_url ?? '',
       role: emp.role,
     })
     setEditingId(emp.id)
@@ -175,8 +190,14 @@ export default function AdminEmployees() {
           {filtered.map((emp, i) => (
             <motion.div key={emp.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
               <GlassCard className={`p-4 flex items-center gap-4 ${!emp.is_active ? 'opacity-50' : ''}`}>
-                <div className="w-10 h-10 rounded-xl bg-gradient-higame flex items-center justify-center text-sm font-outfit font-bold text-white flex-shrink-0">
-                  {getInitials(emp.full_name)}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-outfit font-bold text-white flex-shrink-0 overflow-hidden relative">
+                  {emp.avatar_url ? (
+                    <img src={emp.avatar_url} alt={emp.full_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-higame flex items-center justify-center">
+                      {getInitials(emp.full_name)}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -194,8 +215,11 @@ export default function AdminEmployees() {
                   <button onClick={() => openEdit(emp)} className="btn-ghost p-2 rounded-lg">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => setConfirmToggle(emp)} className="btn-ghost p-2 rounded-lg">
+                  <button onClick={() => setConfirmToggle(emp)} className="btn-ghost p-2 rounded-lg" title={emp.is_active ? 'Desativar' : 'Ativar'}>
                     {emp.is_active ? <ToggleRight className="w-5 h-5 text-higame-success" /> : <ToggleLeft className="w-5 h-5 text-higame-muted" />}
+                  </button>
+                  <button onClick={() => setConfirmDelete(emp)} className="btn-ghost p-2 rounded-lg text-higame-muted hover:text-red-400" title="Excluir">
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </GlassCard>
@@ -212,17 +236,17 @@ export default function AdminEmployees() {
             <h3 className="text-lg font-outfit font-bold text-higame-text">
               {editingId ? 'Editar Colaborador' : 'Novo Colaborador'}
             </h3>
-            {['full_name', ...(editingId ? [] : ['email', 'password']), 'position', 'team'].map(field => (
+            {['full_name', ...(editingId ? [] : ['email', 'password']), 'position', 'team', 'avatar_url'].map(field => (
               <div key={field}>
                 <label className="input-label capitalize">
-                  {field === 'full_name' ? 'Nome Completo' : field === 'position' ? 'Cargo' : field === 'team' ? 'Equipe' : field.charAt(0).toUpperCase() + field.slice(1)}
+                  {field === 'full_name' ? 'Nome Completo' : field === 'position' ? 'Cargo' : field === 'team' ? 'Equipe' : field === 'avatar_url' ? 'URL da Foto (Avatar)' : field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
                 <input
                   type={field === 'password' ? 'password' : field === 'email' ? 'email' : 'text'}
                   value={form[field as keyof EmployeeForm]}
                   onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                   className="input-field"
-                  placeholder={field === 'full_name' ? 'João Silva' : field === 'email' ? 'joao@empresa.com' : field === 'password' ? 'Min. 6 caracteres' : ''}
+                  placeholder={field === 'full_name' ? 'João Silva' : field === 'email' ? 'joao@empresa.com' : field === 'password' ? 'Min. 6 caracteres' : field === 'avatar_url' ? 'https://...' : ''}
                 />
               </div>
             ))}
@@ -251,6 +275,16 @@ export default function AdminEmployees() {
         variant={confirmToggle?.is_active ? 'danger' : 'primary'}
         onConfirm={() => confirmToggle && handleToggleActive(confirmToggle)}
         onCancel={() => setConfirmToggle(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        title="Excluir Colaborador?"
+        description={`Tem certeza que deseja excluir ${confirmDelete?.full_name}? Essa ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        variant="danger"
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
       />
     </div>
   )
