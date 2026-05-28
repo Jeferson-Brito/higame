@@ -6,12 +6,22 @@ import { XPProgressBar } from '@/components/XPProgressBar'
 import { getInitials, calculateLevel } from '@/lib/utils'
 import { getAppSettings } from '@/lib/ranking'
 import type { Ranking, EmployeeResult, KpiDefinition } from '@/types'
-import { Zap, Star, Trophy, Edit2 } from 'lucide-react'
+import { Zap, Star, Trophy, Edit2, Award } from 'lucide-react'
+
+// Estilos de raridade para a borda/fundo da medalha
+const RARITY_COLORS: Record<string, string> = {
+  common: 'bg-slate-700 text-slate-300 border-slate-500',
+  rare: 'bg-blue-900/50 text-blue-400 border-blue-500 shadow-glow-neon',
+  epic: 'bg-purple-900/50 text-purple-400 border-purple-500 shadow-glow-purple',
+  legendary: 'bg-amber-900/50 text-amber-400 border-amber-500 shadow-glow-gold',
+  mythic: 'bg-red-900/50 text-red-400 border-red-500 shadow-glow-red',
+}
 
 export default function Profile() {
   const { profile, refreshProfile } = useAuth()
   const [ranking, setRanking] = useState<Ranking | null>(null)
   const [results, setResults] = useState<(EmployeeResult & { kpi: KpiDefinition })[]>([])
+  const [badges, setBadges] = useState<any[]>([])
   const [xpPerLevel, setXpPerLevel] = useState(1000)
   const [loading, setLoading] = useState(true)
   const [editName, setEditName] = useState(false)
@@ -33,15 +43,27 @@ export default function Profile() {
       const { data: seasonData } = await supabase
         .from('seasons').select('id').eq('status', 'active').single()
 
-      if (!seasonData) return
+      if (!seasonData) {
+        // Se não tiver temporada, ainda assim carrega as medalhas
+        const { data: badgesData } = await supabase
+          .from('employee_badges')
+          .select('id, unlocked_at, badge:badges(id, name, description, icon, rarity)')
+          .eq('employee_id', profileId)
+          .order('unlocked_at', { ascending: false })
+          
+        setBadges(badgesData ?? [])
+        return
+      }
 
-      const [rankData, resultsData] = await Promise.all([
+      const [rankData, resultsData, badgesData] = await Promise.all([
         supabase.from('rankings').select('*').eq('employee_id', profileId).eq('season_id', seasonData.id).single(),
         supabase.from('employee_results').select('*, kpi:kpi_definitions(*)').eq('employee_id', profileId).eq('season_id', seasonData.id),
+        supabase.from('employee_badges').select('id, unlocked_at, badge:badges(id, name, description, icon, rarity)').eq('employee_id', profileId).order('unlocked_at', { ascending: false })
       ])
 
       setRanking(rankData.data as Ranking | null)
       setResults((resultsData.data ?? []) as (EmployeeResult & { kpi: KpiDefinition })[])
+      setBadges(badgesData.data ?? [])
     } finally {
       setLoading(false)
     }
@@ -66,7 +88,7 @@ export default function Profile() {
   if (loading) return <Skeleton className="h-96 w-full" />
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto pb-10">
       <PageHeader title="Meu Perfil" />
 
       {/* Card principal */}
@@ -135,6 +157,41 @@ export default function Profile() {
         <div className="mt-6">
           <XPProgressBar totalXp={totalXp} xpPerLevel={xpPerLevel} />
         </div>
+      </GlassCard>
+
+      {/* Coleção de Medalhas */}
+      <GlassCard className="p-6">
+        <h3 className="font-outfit font-bold text-higame-text mb-4 flex items-center gap-2">
+          <Award className="w-5 h-5 text-amber-400" /> Coleção de Medalhas
+        </h3>
+        
+        {badges.length === 0 ? (
+          <p className="text-sm text-slate-500 text-center py-6 border border-dashed border-white/10 rounded-xl">
+            Você ainda não conquistou nenhuma medalha. Cumpra missões e bata suas metas!
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+            {badges.map((eb: any) => {
+              const b = Array.isArray(eb.badge) ? eb.badge[0] : eb.badge
+              return (
+                <div key={eb.id} className="relative group cursor-help">
+                  <div className={`flex flex-col items-center justify-center text-center p-3 h-28 rounded-xl border ${RARITY_COLORS[b.rarity]} bg-opacity-20 hover:scale-105 transition-transform`}>
+                    <div className="text-4xl mb-1 filter drop-shadow-md">{b.icon}</div>
+                    <h4 className="font-outfit font-bold text-white text-[10px] leading-tight line-clamp-2">{b.name}</h4>
+                  </div>
+                  
+                  {/* Tooltip Hover */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 rounded-xl bg-slate-900 border border-white/10 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+                    <p className="text-xs text-amber-400 font-bold mb-1">{b.name}</p>
+                    <p className="text-[10px] text-slate-300 mb-2">{b.description}</p>
+                    <p className="text-[9px] text-slate-500 uppercase tracking-widest">Desbloqueada em</p>
+                    <p className="text-[9px] text-slate-400">{new Date(eb.unlocked_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </GlassCard>
 
       {/* KPIs da Temporada Atual */}
