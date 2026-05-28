@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, EmptyState, StatusDot, ConfirmModal } from '@/components/ui/index'
 import type { Season } from '@/types'
@@ -29,6 +30,7 @@ function buildSeasonName(month: number, year: number) {
 }
 
 export default function AdminSeasons() {
+  const navigate = useNavigate()
   const [seasons, setSeasons] = useState<Season[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -146,7 +148,10 @@ export default function AdminSeasons() {
         <div className="space-y-3">
           {seasons.map((season, i) => (
             <motion.div key={season.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-              <GlassCard className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+              <GlassCard 
+                className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 cursor-pointer hover:border-higame-purple/30 transition-colors"
+                onClick={() => navigate(`/admin/seasons/${season.id}`)}
+              >
                 <div className="flex items-center gap-3 flex-1">
                   <div className="w-10 h-10 rounded-xl bg-higame-surface2 flex items-center justify-center flex-shrink-0">
                     <Calendar className="w-5 h-5 text-higame-purple" />
@@ -167,7 +172,7 @@ export default function AdminSeasons() {
                 </div>
 
                 {/* Ações */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   {season.status === 'draft' && (
                     <>
                       <button onClick={() => { setForm({ name: season.name, month: season.month, year: season.year, description: season.description ?? '' }); setEditingId(season.id); setShowForm(true) }} className="btn-ghost p-2 rounded-lg" title="Editar">

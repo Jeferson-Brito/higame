@@ -20,6 +20,7 @@ import Badges from '@/pages/Badges'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminEmployees from '@/pages/admin/Employees'
 import AdminSeasons from '@/pages/admin/Seasons'
+import SeasonDetails from '@/pages/admin/SeasonDetails'
 import AdminKPIs from '@/pages/admin/KPIs'
 import AdminResults from '@/pages/admin/Results'
 import AdminRanking from '@/pages/admin/AdminRanking'
@@ -60,13 +61,14 @@ export default function App() {
           }>
             <Route index element={<AdminDashboard />} />
             <Route path="employees" element={<AdminEmployees />} />
+            <Route path="badges" element={<AdminBadges />} />
             <Route path="seasons" element={<AdminSeasons />} />
+            <Route path="seasons/:id" element={<SeasonDetails />} />
             <Route path="kpis" element={<AdminKPIs />} />
             <Route path="results" element={<AdminResults />} />
             <Route path="ranking" element={<AdminRanking />} />
             <Route path="store" element={<AdminStore />} />
             <Route path="quests" element={<AdminQuests />} />
-            <Route path="badges" element={<AdminBadges />} />
           </Route>
 
           {/* Fallback */}
