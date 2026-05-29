@@ -13,31 +13,65 @@ import toast from 'react-hot-toast'
 // ============================================================
 // Navegação por role
 // ============================================================
-
 const EMPLOYEE_NAV = [
-  { icon: LayoutDashboard, label: 'Dashboard',    to: '/dashboard' },
-  { icon: Trophy,          label: 'Ranking',      to: '/ranking' },
-  { icon: Users,           label: 'Jogadores',    to: '/players' },
-  { icon: History,         label: 'Temporadas',   to: '/seasons' },
-  { icon: Award,           label: 'Medalhas',     to: '/badges' },
-  { icon: Shield,          label: 'Battle Pass',  to: '/battle-pass', highlight: true },
-  { icon: Store,           label: 'Loja',         to: '/store' },
+  {
+    group: 'Geral',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard',    to: '/dashboard' },
+      { icon: Users,           label: 'Jogadores',    to: '/players' },
+    ]
+  },
+  {
+    group: 'Gamificação',
+    items: [
+      { icon: Trophy,          label: 'Ranking',      to: '/ranking' },
+      { icon: History,         label: 'Temporadas',   to: '/seasons' },
+      { icon: Award,           label: 'Medalhas',     to: '/badges' },
+    ]
+  },
+  {
+    group: 'Economia',
+    items: [
+      { icon: Store,           label: 'Loja',         to: '/store' },
+      { icon: Shield,          label: 'Battle Pass',  to: '/battle-pass', highlight: true },
+    ]
+  }
 ]
 
 const ADMIN_NAV = [
-  { icon: LayoutDashboard, label: 'Painel',        to: '/admin' },
-  { icon: Users,           label: 'Colaboradores', to: '/admin/employees' },
-  { icon: Users2,          label: 'Equipes',       to: '/admin/teams' },
-  { icon: Target,          label: 'Missões',       to: '/admin/quests' },
-  { icon: ClipboardList,   label: 'Aprovações',    to: '/admin/approvals' },
-  { icon: Award,           label: 'Medalhas',      to: '/admin/badges' },
-  { icon: Calendar,        label: 'Temporadas',    to: '/admin/seasons' },
-  { icon: BarChart3,       label: 'Metas (KPIs)',  to: '/admin/kpis' },
-  { icon: ClipboardList,   label: 'Resultados',    to: '/admin/results' },
-  { icon: Coins,           label: 'Moedas (HC)',   to: '/admin/coins' },
-  { icon: Trophy,          label: 'Ranking',       to: '/admin/ranking' },
-  { icon: Store,           label: 'Loja',          to: '/admin/store' },
-  { icon: Shield,          label: 'Battle Pass',   to: '/admin/battle-pass', highlight: true },
+  {
+    group: 'Geral',
+    items: [
+      { icon: LayoutDashboard, label: 'Painel',        to: '/admin' },
+      { icon: Users,           label: 'Colaboradores', to: '/admin/employees' },
+      { icon: Users2,          label: 'Equipes',       to: '/admin/teams' },
+    ]
+  },
+  {
+    group: 'Gamificação',
+    items: [
+      { icon: Target,          label: 'Missões',       to: '/admin/quests' },
+      { icon: ClipboardList,   label: 'Aprovações',    to: '/admin/approvals' },
+      { icon: Award,           label: 'Medalhas',      to: '/admin/badges' },
+      { icon: Calendar,        label: 'Temporadas',    to: '/admin/seasons' },
+      { icon: Trophy,          label: 'Ranking',       to: '/admin/ranking' },
+    ]
+  },
+  {
+    group: 'Desempenho',
+    items: [
+      { icon: BarChart3,       label: 'Metas (KPIs)',  to: '/admin/kpis' },
+      { icon: ClipboardList,   label: 'Resultados',    to: '/admin/results' },
+    ]
+  },
+  {
+    group: 'Economia',
+    items: [
+      { icon: Coins,           label: 'Moedas (HC)',   to: '/admin/coins' },
+      { icon: Store,           label: 'Loja',          to: '/admin/store' },
+      { icon: Shield,          label: 'Battle Pass',   to: '/admin/battle-pass', highlight: true },
+    ]
+  }
 ]
 
 // ============================================================
@@ -52,7 +86,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { profile, isAdmin, signOut } = useAuth()
   const navigate = useNavigate()
-  const navItems = isAdmin ? ADMIN_NAV : EMPLOYEE_NAV
+  const navGroups = isAdmin ? ADMIN_NAV : EMPLOYEE_NAV
 
   const handleSignOut = async () => {
     await signOut()
@@ -91,46 +125,62 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-scrollbar">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/admin'}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-inter font-medium transition-all duration-200 cursor-pointer relative',
-                isActive
-                  ? 'text-higame-text bg-higame-purple/10 border border-higame-purple/20 shadow-glow-purple/20'
-                  : (item as any).highlight
-                    ? 'text-purple-300 hover:text-white hover:bg-purple-500/10 border border-purple-500/20'
-                    : 'text-higame-text2 hover:text-higame-text hover:bg-higame-surface2'
-              )
-            }
-            title={collapsed ? item.label : undefined}
-          >
-            {({ isActive }) => (
-              <>
-                <item.icon className={cn(
-                  'w-5 h-5 flex-shrink-0 transition-colors',
-                  isActive ? 'text-higame-purple' : 'text-higame-muted'
-                )} />
-                <AnimatePresence>
-                  {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -8 }}
-                      transition={{ duration: 0.2 }}
-                      className="whitespace-nowrap"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </>
-            )}
-          </NavLink>
+      <nav className="flex-1 px-3 py-4 overflow-y-auto no-scrollbar space-y-4">
+        {navGroups.map((group, groupIdx) => (
+          <div key={groupIdx} className="space-y-1">
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="px-3 pb-1 pt-2 text-xs font-bold text-higame-muted/70 uppercase tracking-widest"
+                >
+                  {group.group}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/admin'}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-inter font-medium transition-all duration-200 cursor-pointer relative',
+                    isActive
+                      ? 'text-higame-text bg-higame-purple/10 border border-higame-purple/20 shadow-glow-purple/20'
+                      : (item as any).highlight
+                        ? 'text-purple-300 hover:text-white hover:bg-purple-500/10 border border-purple-500/20'
+                        : 'text-higame-text2 hover:text-higame-text hover:bg-higame-surface2'
+                  )
+                }
+                title={collapsed ? item.label : undefined}
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon className={cn(
+                      'w-5 h-5 flex-shrink-0 transition-colors',
+                      isActive ? 'text-higame-purple' : 'text-higame-muted'
+                    )} />
+                    <AnimatePresence>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="whitespace-nowrap"
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
 
