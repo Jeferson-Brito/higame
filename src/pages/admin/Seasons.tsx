@@ -93,8 +93,12 @@ export default function AdminSeasons() {
       setShowForm(false)
       setEditingId(null)
       await fetchSeasons()
-    } catch (err: unknown) {
-      toast.error((err as Error).message ?? 'Erro ao salvar', { style: TOAST_STYLE })
+    } catch (err: any) {
+      if (err?.code === '23505' || err?.message?.includes('duplicate key')) {
+        toast.error('Já existe uma temporada criada para este mês e ano.', { style: TOAST_STYLE })
+      } else {
+        toast.error(err.message ?? 'Erro ao salvar temporada.', { style: TOAST_STYLE })
+      }
     } finally {
       setSaving(false)
     }
