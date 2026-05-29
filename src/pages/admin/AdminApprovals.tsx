@@ -95,11 +95,25 @@ export default function AdminApprovals() {
         const { data: season } = await supabase.from('seasons').select('id').eq('status', 'active').maybeSingle()
         if (season) {
           const { data: rank } = await supabase.from('rankings').select('total_xp').eq('employee_id', empId).eq('season_id', season.id).maybeSingle()
+          
           if (rank) {
-            await supabase.from('rankings').update({ total_xp: rank.total_xp + quest.xp_reward }).eq('employee_id', empId).eq('season_id', season.id)
+            const { error: updRankErr } = await supabase.from('rankings').update({ total_xp: rank.total_xp + quest.xp_reward }).eq('employee_id', empId).eq('season_id', season.id)
+            if (updRankErr) console.error('Erro ao atualizar ranking:', updRankErr)
           } else {
-            await supabase.from('rankings').insert({ employee_id: empId, season_id: season.id, total_xp: quest.xp_reward })
+            const { error: insRankErr } = await supabase.from('rankings').insert({ employee_id: empId, season_id: season.id, total_xp: quest.xp_reward })
+            if (insRankErr) console.error('Erro ao inserir ranking:', insRankErr)
           }
+
+          // Inserir histórico de XP para garantir transparência e recalculo se necessário
+          const { error: histErr } = await supabase.from('xp_history').insert({
+            employee_id: empId,
+            season_id: season.id,
+            xp_delta: quest.xp_reward,
+            reason: `Missão concluída: ${quest.name}`
+          })
+          if (histErr) console.error('Erro ao inserir histórico de XP:', histErr)
+        } else {
+          console.warn('Nenhuma temporada ativa encontrada. XP não entregue.')
         }
       }
 
