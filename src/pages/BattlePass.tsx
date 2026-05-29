@@ -432,40 +432,50 @@ export default function BattlePass() {
             <p className="font-bold">Nenhuma recompensa configurada.</p>
           </div>
         ) : (
-          <div ref={trackRef} className="absolute inset-0 overflow-x-auto no-scrollbar flex items-center px-[50vw] sm:px-[30vw] pt-10" style={{ scrollSnapType: 'x mandatory' }}>
+          <div ref={trackRef} className="absolute inset-0 overflow-x-auto no-scrollbar flex items-center pt-10" style={{ scrollSnapType: 'x mandatory' }}>
             
-            {/* Linha Contínua Fundo (Laranja Escuro) */}
-            <div className="absolute h-8 bg-[#9a3412] left-0 right-0 border-y-2 border-[#7c2d12]" style={{ width: Math.max(2000, rewards.length * 150 + 1000), top: '65%' }} />
-            
-            {/* Linha de Progresso Preenchida (Laranja Brilhante) */}
-            <div className="absolute h-8 bg-[#f59e0b] left-0 shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-1000 border-y-2 border-[#d97706]" 
-                 style={{ width: `calc(50vw + ${currentLevel * 150}px + ${(currentXp / xpPerLevel) * 150}px)`, top: '65%' }}>
-              <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40" />
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
-            </div>
+            {/* Wrapper de Conteúdo com padding calculado para centralizar perfeitamente */}
+            <div className="relative flex items-center h-full" style={{ paddingLeft: 'calc(50vw - 70px)', paddingRight: 'calc(50vw - 70px)' }}>
+              
+              {/* Linha Contínua Fundo (Laranja Escuro) */}
+              <div className="absolute h-8 bg-[#9a3412] left-0 right-0 border-y-2 border-[#7c2d12]" style={{ top: '65%' }} />
+              
+              {/* Linha de Progresso Preenchida (Laranja Brilhante) */}
+              <div className="absolute h-8 bg-[#f59e0b] left-0 shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-1000 border-y-2 border-[#d97706]" 
+                   style={{ 
+                     /* O nível 1 começa exatamente em (50vw - 70px) padding + 70px (centro do card) = 50vw. 
+                        O nível 0 fica 150px antes disso.
+                        A barra vai até o nível atual + progresso fracionado. */
+                     width: `calc(50vw - 150px + ${(progress?.total_bp_xp || 0) / xpPerLevel * 150}px)`, 
+                     top: '65%' 
+                   }}>
+                <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+              </div>
 
-            <div className="flex gap-[10px] relative z-10 h-full">
-              {rewards.map((reward, i) => {
-                const isUnlocked  = currentLevel >= reward.level
-                const isClaimed   = claimedIds.has(reward.id)
-                const isMyLevel   = reward.level === currentLevel
-                const playersHere = playersByLevel[reward.level] ?? []
-                const milestoneXP = reward.level * xpPerLevel
+              <div className="flex gap-[10px] relative z-10 h-full">
+                {rewards.map((reward, i) => {
+                  const isUnlocked  = currentLevel >= reward.level
+                  const isClaimed   = claimedIds.has(reward.id)
+                  const isMyLevel   = reward.level === currentLevel
+                  const playersHere = playersByLevel[reward.level] ?? []
+                  const milestoneXP = reward.level * xpPerLevel
 
-                return (
-                  <motion.div key={reward.id} data-level={reward.level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.5) }}>
-                    <RewardCard
-                      reward={reward}
-                      isUnlocked={isUnlocked}
-                      isClaimed={isClaimed}
-                      onClaim={handleClaim}
-                      playersHere={playersHere}
-                      isMyLevel={isMyLevel}
-                      milestoneXP={milestoneXP}
-                    />
-                  </motion.div>
-                )
-              })}
+                  return (
+                    <motion.div key={reward.id} data-level={reward.level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.5) }}>
+                      <RewardCard
+                        reward={reward}
+                        isUnlocked={isUnlocked}
+                        isClaimed={isClaimed}
+                        onClaim={handleClaim}
+                        playersHere={playersHere}
+                        isMyLevel={isMyLevel}
+                        milestoneXP={milestoneXP}
+                      />
+                    </motion.div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}
