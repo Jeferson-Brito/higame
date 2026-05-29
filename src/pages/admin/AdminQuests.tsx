@@ -188,11 +188,13 @@ export default function AdminQuests() {
       }
 
       // 2. Dar XP no ranking da temporada atual
-      const { data: season } = await supabase.from('seasons').select('id').eq('status', 'active').single()
+      const { data: season } = await supabase.from('seasons').select('id').eq('status', 'active').maybeSingle()
       if (season) {
-        const { data: rank } = await supabase.from('rankings').select('total_xp').eq('employee_id', selectedEmp).eq('season_id', season.id).single()
+        const { data: rank } = await supabase.from('rankings').select('total_xp').eq('employee_id', selectedEmp).eq('season_id', season.id).maybeSingle()
         if (rank) {
           await supabase.from('rankings').update({ total_xp: rank.total_xp + questDef.xp_reward }).eq('employee_id', selectedEmp).eq('season_id', season.id)
+        } else {
+          await supabase.from('rankings').insert({ employee_id: selectedEmp, season_id: season.id, total_xp: questDef.xp_reward })
         }
       }
 
