@@ -29,6 +29,7 @@ export default function AdminQuests() {
   const [description, setDescription] = useState('')
   const [xp, setXp] = useState(50)
   const [coins, setCoins] = useState(10)
+  const [bpXp, setBpXp] = useState(0)
   const [target, setTarget] = useState(1)
   const [frequency, setFrequency] = useState('daily')
   const [creating, setCreating] = useState(false)
@@ -68,6 +69,7 @@ export default function AdminQuests() {
     setDescription('')
     setXp(50)
     setCoins(10)
+    setBpXp(0)
     setTarget(1)
     setFrequency('daily')
   }
@@ -79,6 +81,7 @@ export default function AdminQuests() {
     setDescription(quest.description || '')
     setXp(quest.xp_reward)
     setCoins(quest.coin_reward)
+    setBpXp((quest as any).bp_xp_reward ?? 0)
     setTarget(quest.target_value)
     setFrequency(quest.frequency)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -105,7 +108,7 @@ export default function AdminQuests() {
         // Atualiza a missão existente
         const { error: updError } = await supabase
           .from('quests')
-          .update({ name, description, xp_reward: xp, coin_reward: coins, target_value: target, frequency })
+          .update({ name, description, xp_reward: xp, coin_reward: coins, bp_xp_reward: bpXp, target_value: target, frequency })
           .eq('id', editingId)
         
         if (updError) throw updError
@@ -114,7 +117,7 @@ export default function AdminQuests() {
         // 1. Cria a Quest
         const { data: newQuest, error: questError } = await supabase
           .from('quests')
-          .insert({ name, description, xp_reward: xp, coin_reward: coins, target_value: target, frequency })
+          .insert({ name, description, xp_reward: xp, coin_reward: coins, bp_xp_reward: bpXp, target_value: target, frequency })
           .select()
           .single()
 
@@ -187,7 +190,16 @@ export default function AdminQuests() {
         }
       }
 
-      // 3. Notificar o usuário
+      // 3. Entregar BP XP (se a quest tiver bp_xp_reward > 0)
+      if (questDef.bp_xp_reward > 0) {
+        await supabase.rpc('give_bp_xp', {
+          p_employee_id: selectedEmp,
+          p_bp_xp: questDef.bp_xp_reward,
+          p_reason: `Missão concluída: ${questDef.name}`,
+        })
+      }
+
+      // 4. Notificar o usuário
       await supabase.from('notifications').insert({
         profile_id: selectedEmp,
         title: 'Missão Concluída! 🎯',
@@ -273,6 +285,12 @@ export default function AdminQuests() {
                   <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">HiCoins (HC)</label>
                   <input type="number" required value={coins} onChange={e => setCoins(Number(e.target.value))} className="input-field w-full" />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-1">⚔️ BP XP (Battle Pass)</label>
+                <p className="text-[10px] text-slate-500 mb-2">XP exclusivo para progressão no Battle Pass. 0 = não concede BP XP.</p>
+                <input type="number" min={0} value={bpXp} onChange={e => setBpXp(Number(e.target.value))} className="input-field w-full" placeholder="Ex: 40" />
               </div>
 
               <button disabled={creating} type="submit" className="w-full btn-primary py-3 mt-4 flex justify-center items-center gap-2">

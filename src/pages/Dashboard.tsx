@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { getAppSettings } from '@/lib/ranking'
 import { calculateLevel } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import type { Season, Ranking, AppSettings } from '@/types'
-import { Flame, Target, Trophy, Star, ChevronRight, CheckCircle2, Users } from 'lucide-react'
+import type { Season, Ranking, AppSettings, BattlePassSeason, BattlePassProgress, BattlePassReward } from '@/types'
+import { Flame, Target, Trophy, Star, ChevronRight, CheckCircle2, Users, Shield, Zap, Gift, Lock } from 'lucide-react'
 import { AvatarFrame } from '@/components/ui/AvatarFrame'
 import { StreakCard } from '@/components/StreakCard'
 import { SocialFeed } from '@/components/SocialFeed'
@@ -60,6 +60,9 @@ export default function Dashboard() {
   // Real data state
   const [quests, setQuests] = useState<EmployeeQuest[]>([])
   const [badges, setBadges] = useState<EmployeeBadge[]>([])
+  const [bpSeason, setBpSeason] = useState<BattlePassSeason | null>(null)
+  const [bpProgress, setBpProgress] = useState<BattlePassProgress | null>(null)
+  const [bpNextReward, setBpNextReward] = useState<BattlePassReward | null>(null)
   
   const profileId = profile?.id
 
@@ -126,6 +129,35 @@ export default function Dashboard() {
       })) as EmployeeBadge[]
 
       setBadges(mappedBadges)
+
+      // Fetch Battle Pass ativo
+      const { data: bpSeasonData } = await supabase
+        .from('battle_pass_seasons')
+        .select('*')
+        .eq('is_active', true)
+        .is('deleted_at', null)
+        .maybeSingle()
+
+      if (bpSeasonData) {
+        setBpSeason(bpSeasonData as BattlePassSeason)
+        const [bpProgressRes, bpRewardsRes] = await Promise.all([
+          supabase.from('battle_pass_progress')
+            .select('*')
+            .eq('employee_id', profileId)
+            .eq('season_id', bpSeasonData.id)
+            .maybeSingle(),
+          supabase.from('battle_pass_rewards')
+            .select('*')
+            .eq('season_id', bpSeasonData.id)
+            .eq('is_active', true)
+            .order('level'),
+        ])
+        const prog = bpProgressRes.data as BattlePassProgress | null
+        setBpProgress(prog)
+        const currentLevel = prog?.current_level ?? 0
+        const nextReward = (bpRewardsRes.data ?? []).find((r: any) => r.level === currentLevel + 1)
+        setBpNextReward((nextReward ?? null) as BattlePassReward | null)
+      }
 
       // Detectar Level Up
       const xpPerLevelCalc = settingsData.xp_per_level
@@ -246,7 +278,72 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* 2. MISSÕES (QUESTS) */}
+      {/* 2. BATTLE PASS CARD */}
+      {bpSeason && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Link to="/battle-pass" className="block group">
+            <div className="relative overflow-hidden rounded-[2rem] border border-purple-500/20 bg-gradient-to-br from-slate-900 via-purple-950/30 to-slate-900 p-6 sm:p-8 hover:border-purple-500/40 transition-all shadow-[0_0_40px_rgba(147,51,234,0.1)] hover:shadow-[0_0_60px_rgba(147,51,234,0.2)]">
+              <div className="absolute top-0 right-0 w-[400px] h-[300px] bg-purple-600/10 rounded-full blur-[100px]" />
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.5)] flex-shrink-0">
+                    <Shield className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-purple-400 mb-0.5">Battle Pass</p>
+                    <h3 className="text-lg font-black text-white">{bpSeason.name}</h3>
+                    <p className="text-sm text-slate-400">
+                      {bpProgress ? `Nível ${bpProgress.current_level} de ${bpSeason.max_level}` : 'Comece sua jornada!'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  {/* Próxima recompensa */}
+                  {bpNextReward && (
+                    <div className="hidden sm:flex items-center gap-2 text-center">
+                      <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                        <p className="text-2xl">{bpNextReward.icon || '🎁'}</p>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Próx. recompensa</p>
+                        <p className="text-xs font-bold text-white">{bpNextReward.name}</p>
+                        <p className="text-[10px] text-purple-400">Nível {bpNextReward.level}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* XP + Barra */}
+                  <div className="w-40 sm:w-48">
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-purple-300 flex items-center gap-1">
+                        <Zap className="w-3 h-3" />{(bpProgress?.current_xp ?? 0).toLocaleString()} BP XP
+                      </span>
+                      <span className="text-slate-500">{bpSeason.xp_per_level}</span>
+                    </div>
+                    <div className="h-2.5 bg-slate-950 rounded-full overflow-hidden border border-white/10">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, ((bpProgress?.current_xp ?? 0) / bpSeason.xp_per_level) * 100)}%` }}
+                        transition={{ duration: 1.2, ease: 'easeOut' }}
+                        className="h-full bg-gradient-to-r from-purple-600 to-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-purple-400 transition-colors flex-shrink-0" />
+                </div>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+      )}
+
+      {/* 3. MISSÕES (QUESTS) */}
       <div className="space-y-4">
         <div className="flex items-center gap-3 px-2">
           <Target className="w-6 h-6 text-higame-neon" />

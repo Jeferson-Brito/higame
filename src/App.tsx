@@ -15,6 +15,7 @@ import Profile from '@/pages/Profile'
 import Players from '@/pages/Players'
 import Store from '@/pages/Store'
 import Badges from '@/pages/Badges'
+import BattlePass from '@/pages/BattlePass'
 
 // Páginas admin
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -29,6 +30,7 @@ import AdminQuests from '@/pages/admin/AdminQuests'
 import AdminBadges from '@/pages/admin/AdminBadges'
 import AdminTeams from '@/pages/admin/AdminTeams'
 import AdminCoins from '@/pages/admin/AdminCoins'
+import AdminBattlePass from '@/pages/admin/AdminBattlePass'
 
 export default function App() {
   return (
@@ -53,6 +55,7 @@ export default function App() {
             <Route path="players/:id" element={<Profile />} />
             <Route path="store" element={<Store />} />
             <Route path="badges" element={<Badges />} />
+            <Route path="battle-pass" element={<BattlePass />} />
           </Route>
 
           {/* Área Admin */}
@@ -73,6 +76,7 @@ export default function App() {
             <Route path="quests" element={<AdminQuests />} />
             <Route path="teams" element={<AdminTeams />} />
             <Route path="coins" element={<AdminCoins />} />
+            <Route path="battle-pass" element={<AdminBattlePass />} />
           </Route>
 
           {/* Fallback */}

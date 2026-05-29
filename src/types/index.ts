@@ -182,9 +182,69 @@ export interface Quest {
   frequency: QuestFrequency
   xp_reward: number
   coin_reward: number
+  bp_xp_reward: number
   target_value: number
   is_active: boolean
   created_at: string
+}
+
+// ============================================================
+// Battle Pass
+// ============================================================
+
+export type BpRewardType = 'coins' | 'badge' | 'store_item' | 'custom'
+
+export interface BattlePassSeason {
+  id: string
+  name: string
+  description: string | null
+  start_date: string
+  end_date: string
+  max_level: number
+  xp_per_level: number
+  is_active: boolean
+  deleted_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BattlePassReward {
+  id: string
+  season_id: string
+  level: number
+  reward_type: BpRewardType
+  reward_value: {
+    amount?: number       // para coins
+    badge_id?: string     // para badge
+    item_id?: string      // para store_item
+    title?: string        // para custom
+    description?: string  // para custom
+  }
+  rarity: RarityTier
+  name: string
+  description: string | null
+  icon: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BattlePassProgress {
+  id: string
+  employee_id: string
+  season_id: string
+  current_level: number
+  current_xp: number
+  total_bp_xp: number
+  created_at: string
+  updated_at: string
+}
+
+export interface BattlePassClaim {
+  id: string
+  employee_id: string
+  reward_id: string
+  claimed_at: string
 }
 
 export interface EmployeeQuest {

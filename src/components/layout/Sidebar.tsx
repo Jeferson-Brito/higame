@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Trophy, History, User,
   Users, Calendar, Settings, BarChart3,
   ClipboardList, Store, Award, Target, Users2, Coins,
-  LogOut, Zap, ChevronLeft, ChevronRight
+  LogOut, Zap, ChevronLeft, ChevronRight, Shield
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,7 @@ const EMPLOYEE_NAV = [
   { icon: Users,           label: 'Jogadores',    to: '/players' },
   { icon: History,         label: 'Temporadas',   to: '/seasons' },
   { icon: Award,           label: 'Medalhas',     to: '/badges' },
+  { icon: Shield,          label: 'Battle Pass',  to: '/battle-pass', highlight: true },
   { icon: Store,           label: 'Loja',         to: '/store' },
 ]
 
@@ -35,6 +36,7 @@ const ADMIN_NAV = [
   { icon: Coins,           label: 'Moedas (HC)',   to: '/admin/coins' },
   { icon: Trophy,          label: 'Ranking',       to: '/admin/ranking' },
   { icon: Store,           label: 'Loja',          to: '/admin/store' },
+  { icon: Shield,          label: 'Battle Pass',   to: '/admin/battle-pass', highlight: true },
 ]
 
 // ============================================================
@@ -96,10 +98,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             end={item.to === '/admin'}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-inter font-medium transition-all duration-200 cursor-pointer',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-inter font-medium transition-all duration-200 cursor-pointer relative',
                 isActive
                   ? 'text-higame-text bg-higame-purple/10 border border-higame-purple/20 shadow-glow-purple/20'
-                  : 'text-higame-text2 hover:text-higame-text hover:bg-higame-surface2'
+                  : (item as any).highlight
+                    ? 'text-purple-300 hover:text-white hover:bg-purple-500/10 border border-purple-500/20'
+                    : 'text-higame-text2 hover:text-higame-text hover:bg-higame-surface2'
               )
             }
             title={collapsed ? item.label : undefined}
