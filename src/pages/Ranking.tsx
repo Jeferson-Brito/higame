@@ -61,21 +61,36 @@ export default function Ranking() {
       setSeason(seasonData)
 
       if (seasonData) {
+        // Obter também a temporada atual do Passe de Batalha para pegar os Troféus
+        const { data: bpSeason } = await supabase.from('battle_pass_seasons').select('id').eq('is_active', true).is('deleted_at', null).maybeSingle()
+        
+        let bpMap: Record<string, number> = {}
+        if (bpSeason) {
+          const { data: bpProg } = await supabase.from('battle_pass_progress').select('employee_id, total_bp_xp').eq('season_id', bpSeason.id)
+          if (bpProg) {
+            for (const p of bpProg) bpMap[p.employee_id] = p.total_bp_xp
+          }
+        }
+
         // Ranking individual da temporada atual
         const { data } = await supabase
           .from('rankings')
           .select('*, profile:profiles(id, full_name, avatar_url, position, team, team_id, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity))')
           .eq('season_id', seasonData.id)
-          .order('rank_position', { ascending: true })
 
-        const mappedData = (data ?? []).map((r: any) => ({
-          ...r,
-          profile: {
-            ...r.profile,
-            active_title: Array.isArray(r.profile.active_title) ? r.profile.active_title[0] : r.profile.active_title,
-            active_frame: Array.isArray(r.profile.active_frame) ? r.profile.active_frame[0] : r.profile.active_frame,
-          }
-        }))
+        const mappedData = (data ?? [])
+          .map((r: any) => ({
+            ...r,
+            total_xp: bpMap[r.employee_id] || 0, // Substitui o XP comum pelos Troféus
+            profile: {
+              ...r.profile,
+              active_title: Array.isArray(r.profile.active_title) ? r.profile.active_title[0] : r.profile.active_title,
+              active_frame: Array.isArray(r.profile.active_frame) ? r.profile.active_frame[0] : r.profile.active_frame,
+            }
+          }))
+          .sort((a, b) => b.total_xp - a.total_xp) // Ordena por Troféus
+          .map((r, i) => ({ ...r, rank_position: i + 1 })) // Recalcula a posição
+          
         setRankings(mappedData as RankingEntry[])
       }
 
@@ -243,8 +258,9 @@ export default function Ranking() {
                               {entry.profile.active_title.name}
                             </p>
                           )}
-                          <p className="text-xs font-outfit font-bold text-higame-purple mt-1">
-                            {entry.total_xp.toLocaleString()} XP
+                          <p className="text-xs font-outfit font-bold text-amber-500 mt-1 flex items-center justify-center gap-1">
+                            <Trophy className="w-3 h-3" />
+                            {entry.total_xp.toLocaleString()}
                           </p>
                         </div>
 
@@ -273,7 +289,7 @@ export default function Ranking() {
                     <tr className="text-left text-xs font-inter font-medium text-higame-muted border-b border-higame-border">
                       <th className="px-4 py-3 w-12">#</th>
                       <th className="px-4 py-3">Colaborador</th>
-                      <th className="px-4 py-3 text-right hidden sm:table-cell">XP</th>
+                      <th className="px-4 py-3 text-right hidden sm:table-cell">Troféus</th>
                       {periodFilter === 'current' && <th className="px-4 py-3 text-right">Score</th>}
                       {periodFilter === 'current' && <th className="px-4 py-3 text-right hidden md:table-cell">KPIs</th>}
                     </tr>
@@ -320,8 +336,8 @@ export default function Ranking() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right hidden sm:table-cell">
-                            <span className="font-outfit font-bold text-higame-purple text-sm">
-                              <Zap className="w-3 h-3 inline mr-0.5" />
+                            <span className="font-outfit font-bold text-amber-500 text-sm">
+                              <Trophy className="w-3 h-3 inline mr-1" />
                               {entry.total_xp.toLocaleString()}
                             </span>
                           </td>

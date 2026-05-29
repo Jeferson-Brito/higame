@@ -377,8 +377,8 @@ export default function Dashboard() {
                   {/* XP + Barra */}
                   <div className="w-40 sm:w-48">
                     <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-purple-300 flex items-center gap-1">
-                        <Zap className="w-3 h-3" />{(bpProgress?.current_xp ?? 0).toLocaleString()} BP XP
+                      <span className="text-amber-500 flex items-center gap-1">
+                        <Trophy className="w-3 h-3" />{(bpProgress?.current_xp ?? 0).toLocaleString()} Troféus
                       </span>
                       <span className="text-slate-500">{bpSeason.xp_per_level}</span>
                     </div>
@@ -387,7 +387,7 @@ export default function Dashboard() {
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(100, ((bpProgress?.current_xp ?? 0) / bpSeason.xp_per_level) * 100)}%` }}
                         transition={{ duration: 1.2, ease: 'easeOut' }}
-                        className="h-full bg-gradient-to-r from-purple-600 to-blue-500"
+                        className="h-full bg-gradient-to-r from-amber-500 to-amber-300"
                       />
                     </div>
                   </div>
@@ -445,8 +445,8 @@ export default function Dashboard() {
                       </span>
                     )}
                     {eq.quest.bp_xp_reward > 0 && (
-                      <span className="text-[10px] font-bold text-purple-400 bg-purple-400/20 px-2 py-1 rounded-md whitespace-nowrap">
-                        +{eq.quest.bp_xp_reward} BP XP
+                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/20 px-2 py-1 rounded-md whitespace-nowrap border border-amber-500/20 flex items-center gap-1">
+                        <Trophy className="w-3 h-3" /> +{eq.quest.bp_xp_reward} Troféus
                       </span>
                     )}
                   </div>

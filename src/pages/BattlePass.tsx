@@ -361,30 +361,44 @@ export default function BattlePass() {
             </div>
           </div>
 
-          {/* XP Bar */}
-          <div>
-            <div className="flex justify-between items-center text-sm font-bold mb-2">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-purple-400" />{currentXp.toLocaleString()} BP XP
-              </span>
-              <span className="text-slate-500">
-                {currentLevel >= maxLevel ? '🏆 NÍVEL MÁXIMO!' : `faltam ${(xpPerLevel - currentXp).toLocaleString()} para Nv.${currentLevel + 1}`}
-              </span>
-            </div>
-            <div className="relative h-5 bg-slate-950 rounded-full overflow-hidden border border-white/10 shadow-inner">
-              <motion.div initial={{ width: 0 }} animate={{ width: `${progressPct}%` }} transition={{ duration: 1.5, ease: 'easeOut' }}
-                className="h-full bg-gradient-to-r from-purple-600 via-blue-500 to-purple-400 relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer" />
-              </motion.div>
-              {[25, 50, 75].map(p => <div key={p} className="absolute top-0 bottom-0 w-px bg-white/10" style={{ left: `${p}%` }} />)}
-              {progressPct > 6 && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[10px] font-black text-white drop-shadow">{Math.round(progressPct)}%</span>
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-between items-center bg-slate-900/50 p-3 rounded-2xl border-2 border-slate-700/50">
+              <div className="flex gap-3 items-center">
+                <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-white" />
                 </div>
-              )}
+                <div>
+                  <p className="text-[10px] font-black uppercase text-amber-400">Total de Troféus</p>
+                  <p className="text-xl font-black text-white leading-none">{totalXp.toLocaleString()}</p>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between text-[10px] text-slate-500 font-bold mt-1">
-              <span>Nv. {currentLevel}</span><span>Nv. {Math.min(maxLevel, currentLevel + 1)}</span>
+
+            {/* XP Bar */}
+            <div>
+              <div className="flex justify-between items-center text-sm font-bold mb-2">
+                <span className="text-amber-500 flex items-center gap-1.5">
+                  <Trophy className="w-4 h-4 text-amber-500" />{currentXp.toLocaleString()} Troféus
+                </span>
+                <span className="text-slate-500">
+                  {currentLevel >= maxLevel ? '🏆 NÍVEL MÁXIMO!' : `faltam ${(xpPerLevel - currentXp).toLocaleString()} para Nv.${currentLevel + 1}`}
+                </span>
+              </div>
+              <div className="relative h-5 bg-slate-950 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${progressPct}%` }} transition={{ duration: 1.5, ease: 'easeOut' }}
+                  className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-500 relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer" />
+                </motion.div>
+                {[25, 50, 75].map(p => <div key={p} className="absolute top-0 bottom-0 w-px bg-white/10" style={{ left: `${p}%` }} />)}
+                {progressPct > 6 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[10px] font-black text-white drop-shadow">{Math.round(progressPct)}%</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-500 font-bold mt-1">
+                <span>Nv. {currentLevel}</span><span>Nv. {Math.min(maxLevel, currentLevel + 1)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -393,14 +407,10 @@ export default function BattlePass() {
       {/* ── BRAWL STARS STYLE TROPHY ROAD TRACK ── */}
       <div className="relative overflow-hidden rounded-[2rem] border-4 border-[#1e3a8a] shadow-2xl" style={{ height: 420 }}>
         
-        {/* Fundo com Paisagem Voxel */}
         <div className="absolute inset-0 bg-[url('/bp_bg.png')] bg-cover bg-center" />
-        
-        {/* Overlay para dar contraste aos cards e números */}
         <div className="absolute inset-0 bg-slate-900/30" />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-transparent to-slate-950/80" />
 
-        {/* HUD Superior sobre a Track */}
         <div className="absolute top-4 left-6 right-6 flex justify-between items-center z-20 pointer-events-none">
           <div className="bg-slate-900/80 backdrop-blur border-2 border-slate-700 p-2 sm:p-3 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-auto">
             <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-inner">
@@ -408,7 +418,7 @@ export default function BattlePass() {
             </div>
             <div>
               <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider leading-none mb-1">XP Total Acumulado</p>
-              <p className="text-xl sm:text-2xl font-black text-white leading-none">{progress?.total_bp_xp?.toLocaleString() || 0}</p>
+              <p className="text-xl sm:text-2xl font-black text-white leading-none">{totalXp.toLocaleString()}</p>
             </div>
           </div>
           
@@ -420,7 +430,6 @@ export default function BattlePass() {
           )}
         </div>
 
-        {/* Botões de Navegação Flutuantes */}
         <button onClick={() => scrollTrack('left')} className="absolute left-2 sm:left-4 top-[60%] -translate-y-1/2 z-30 w-12 h-12 bg-slate-900/80 hover:bg-slate-800 border-2 border-white/20 rounded-full flex items-center justify-center backdrop-blur shadow-2xl transition-all">
           <ChevronLeft className="w-6 h-6 text-white" />
         </button>
@@ -428,7 +437,6 @@ export default function BattlePass() {
           <ChevronRight className="w-6 h-6 text-white" />
         </button>
 
-        {/* Container Horizontal (Scroll) */}
         {rewards.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-500 z-10 relative">
             <Shield className="w-12 h-12 mb-3 opacity-30" />
@@ -437,19 +445,13 @@ export default function BattlePass() {
         ) : (
           <div ref={trackRef} className="absolute inset-0 overflow-x-auto no-scrollbar flex items-center pt-10" style={{ scrollSnapType: 'x mandatory' }}>
             
-            {/* Wrapper de Conteúdo com padding calculado para centralizar perfeitamente */}
             <div className="relative flex items-center h-full" style={{ paddingLeft: 'calc(50vw - 70px)', paddingRight: 'calc(50vw - 70px)' }}>
               
-              {/* Linha Contínua Fundo (Laranja Escuro) */}
               <div className="absolute h-8 bg-[#9a3412] left-0 right-0 border-y-2 border-[#7c2d12]" style={{ top: '65%' }} />
               
-              {/* Linha de Progresso Preenchida (Laranja Brilhante) */}
               <div className="absolute h-8 bg-[#f59e0b] left-0 shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-1000 border-y-2 border-[#d97706]" 
                    style={{ 
-                     /* O nível 1 começa exatamente em (50vw - 70px) padding + 70px (centro do card) = 50vw. 
-                        O nível 0 fica 150px antes disso.
-                        A barra vai até o nível atual + progresso fracionado. */
-                     width: `calc(50vw - 150px + ${(progress?.total_bp_xp || 0) / xpPerLevel * 150}px)`, 
+                     width: `calc(50vw - 150px + ${totalXp / xpPerLevel * 150}px)`, 
                      top: '65%' 
                    }}>
                 <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40" />
@@ -521,14 +523,13 @@ export default function BattlePass() {
         </motion.div>
       )}
 
-      {/* ── COMO GANHAR BP XP ── */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* ── COMO GANHAR TROFÉUS ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { icon: '🎯', label: 'Missões Diárias',  desc: 'Complete missões diárias para ganhar BP XP', color: 'border-blue-500/20 bg-blue-900/10' },
-          { icon: '📅', label: 'Missões Semanais', desc: 'Missões semanais rendem mais BP XP',          color: 'border-purple-500/20 bg-purple-900/10' },
-          { icon: '⭐', label: 'KPIs Ouro',         desc: 'Bater metas de ouro concede BP XP bônus',    color: 'border-amber-500/20 bg-amber-900/10' },
-        ].map(item => (
+          { icon: '🎯', label: 'Missões Diárias',  desc: 'Complete missões diárias para ganhar Troféus', color: 'border-blue-500/20 bg-blue-900/10' },
+          { icon: '📅', label: 'Missões Semanais', desc: 'Missões semanais rendem mais Troféus',          color: 'border-purple-500/20 bg-purple-900/10' },
+          { icon: '⭐', label: 'KPIs Ouro',         desc: 'Bater metas de ouro concede Troféus bônus',    color: 'border-amber-500/20 bg-amber-900/10' },
+        ].map((item, i) => (
           <div key={item.label} className={`p-3 rounded-2xl border ${item.color} flex items-center gap-3`}>
             <span className="text-xl">{item.icon}</span>
             <div>

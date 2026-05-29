@@ -373,15 +373,15 @@ export default function AdminBattlePass() {
       if (!data.success) throw new Error(data.reason)
 
       const msg = data.leveled_up
-        ? `✅ +${giveBpXp} BP XP entregue! Colaborador subiu para Nível ${data.new_level}!`
-        : `✅ +${giveBpXp} BP XP entregue com sucesso!`
+        ? `✅ +${giveBpXp} Troféus entregues! Colaborador subiu para Nível ${data.new_level}!`
+        : `✅ +${giveBpXp} Troféus entregues com sucesso!`
       toast.success(msg, { duration: 5000 })
       setGiveEmp('')
       setGiveBpXp(100)
       setGiveReason('')
       void fetchProgress(selectedSeasonId)
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao entregar BP XP.')
+      toast.error(err.message || 'Erro ao entregar Troféus.')
     } finally {
       setGivingXp(false)
     }
@@ -395,7 +395,7 @@ export default function AdminBattlePass() {
     { key: 'seasons', label: 'Temporadas', icon: Shield },
     { key: 'rewards', label: 'Recompensas', icon: Gift },
     { key: 'progress', label: 'Progresso', icon: TrendingUp },
-    { key: 'give_xp', label: 'Dar BP XP', icon: Zap },
+    { key: 'give_xp', label: 'Dar Troféus', icon: Trophy },
   ] as const
 
   return (
@@ -615,7 +615,7 @@ export default function AdminBattlePass() {
                     <th className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider p-4">Nível</th>
                     <th className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider p-4">XP Atual</th>
                     <th className="text-left text-xs font-bold text-slate-400 uppercase tracking-wider p-4 hidden sm:table-cell">Progresso</th>
-                    <th className="text-right text-xs font-bold text-slate-400 uppercase tracking-wider p-4">Total BP XP</th>
+                    <th className="text-right text-xs font-bold text-slate-400 uppercase tracking-wider p-4">Total de Troféus</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -652,15 +652,15 @@ export default function AdminBattlePass() {
         </div>
       )}
 
-      {/* ── TAB: DAR BP XP ── */}
+      {/* ── TAB: DAR TROFÉUS ── */}
       {activeTab === 'give_xp' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <GlassCard className="p-6 border-purple-500/20">
             <h3 className="font-black text-white text-lg mb-6 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-purple-400" /> Entregar BP XP Manualmente
+              <Trophy className="w-5 h-5 text-amber-500" /> Entregar Troféus Manualmente
             </h3>
             <p className="text-sm text-slate-400 mb-6">
-              Use este painel para dar BP XP a um colaborador. Normalmente isso acontece via conclusão de missões, mas você pode fazer manualmente para eventos especiais, treinamentos, etc.
+              Use este painel para dar Troféus a um colaborador. Normalmente isso acontece via conclusão de missões, mas você pode fazer manualmente para eventos especiais, treinamentos, etc.
             </p>
             <form onSubmit={handleGiveBpXp} className="space-y-4">
               <div>
@@ -671,7 +671,7 @@ export default function AdminBattlePass() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Quantidade de BP XP</label>
+                <label className="block text-xs font-bold text-amber-500 uppercase tracking-wider mb-2">Quantidade de Troféus</label>
                 <input required type="number" min={1} value={giveBpXp} onChange={e => setGiveBpXp(Number(e.target.value))}
                   className="input-field w-full text-lg font-bold" />
               </div>
@@ -683,7 +683,7 @@ export default function AdminBattlePass() {
               <button type="submit" disabled={givingXp}
                 className="w-full py-3 font-black text-white rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(147,51,234,0.4)] disabled:opacity-50 flex items-center justify-center gap-2">
                 <Zap className="w-5 h-5" />
-                {givingXp ? 'Entregando...' : `Entregar +${giveBpXp} BP XP`}
+                {givingXp ? 'Entregando...' : `Entregar +${giveBpXp} Troféus`}
               </button>
             </form>
           </GlassCard>
@@ -694,10 +694,10 @@ export default function AdminBattlePass() {
             </h3>
             <div className="space-y-3">
               {[
-                { icon: '🎯', title: 'Missões', desc: 'Ao aprovar missões, o BP XP é entregue automaticamente se a missão tiver campo "BP XP Reward" > 0.' },
-                { icon: '⭐', title: 'KPIs Ouro', desc: 'KPIs tier Ouro podem dar BP XP bônus (configurável nas missões).' },
-                { icon: '🎪', title: 'Eventos Especiais', desc: 'Use este painel para entregas manuais em eventos, campanhas e datas comemorativas.' },
-                { icon: '📚', title: 'Treinamentos', desc: 'Ao confirmar um treinamento concluído, use este painel para dar o BP XP correspondente.' },
+                { icon: '🎯', title: 'Missões', desc: 'Ao aprovar missões, Troféus são entregues automaticamente se a missão tiver recompensa configurada.' },
+                { icon: '⭐', title: 'KPIs Ouro', desc: 'KPIs tier Ouro podem dar Troféus bônus (configurável nas missões).' },
+                { icon: '📦', title: 'Cosméticos', desc: 'Troféus desbloqueiam as recompensas do Caminho do Passe.' },
+                { icon: '📚', title: 'Treinamentos', desc: 'Ao confirmar um treinamento concluído, use este painel para dar os Troféus correspondentes.' },
               ].map(item => (
                 <div key={item.title} className="flex gap-3 p-3 rounded-xl bg-white/3 border border-white/5">
                   <span className="text-xl">{item.icon}</span>

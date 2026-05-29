@@ -117,17 +117,17 @@ export default function AdminApprovals() {
         }
       }
 
-      // 4. Entregar BP XP
+      // 4. Entregar Troféus
       let bpWarning = ''
       if (quest.bp_xp_reward > 0) {
         const { data: bpRes } = await supabase.rpc('give_bp_xp', {
           p_employee_id: empId,
           p_bp_xp: quest.bp_xp_reward,
-          p_reason: `Missão concluída: ${quest.name}`,
+          p_reason: `Missão Aprovada (RH): ${quest.name}`
         })
         if (bpRes && bpRes.success === false) {
-          console.warn('Erro ao entregar BP XP:', bpRes.reason)
-          bpWarning = ' (BP XP não entregue: Sem passe ativo)'
+          console.warn('Erro ao entregar Troféus:', bpRes.reason)
+          bpWarning = ' (Troféus não entregues: Sem passe ativo)'
         }
       }
 
@@ -206,7 +206,7 @@ export default function AdminApprovals() {
                 <div className="flex gap-2 mb-4">
                   {approval.quest.xp_reward > 0 && <span className="text-xs font-bold text-higame-purple bg-higame-purple/20 px-2 py-1 rounded-md">+{approval.quest.xp_reward} XP</span>}
                   {approval.quest.coin_reward > 0 && <span className="text-xs font-bold text-amber-400 bg-amber-400/20 px-2 py-1 rounded-md">+{approval.quest.coin_reward} HC</span>}
-                  {approval.quest.bp_xp_reward > 0 && <span className="text-xs font-bold text-purple-400 bg-purple-400/20 px-2 py-1 rounded-md">+{approval.quest.bp_xp_reward} BP XP</span>}
+                  {approval.quest.bp_xp_reward > 0 && <span className="text-xs font-bold text-amber-500 bg-amber-500/20 px-2 py-1 rounded-md border border-amber-500/30">+{approval.quest.bp_xp_reward} 🏆 Troféus</span>}
                 </div>
               </div>
 

@@ -210,7 +210,7 @@ export default function AdminQuests() {
         console.warn('Nenhuma temporada ativa. XP não entregue.')
       }
 
-      // 3. Entregar BP XP (se a quest tiver bp_xp_reward > 0)
+      // 3. Entregar Troféus (se a quest tiver bp_xp_reward > 0)
       let bpWarning = ''
       if (questDef.bp_xp_reward > 0) {
         const { data: bpRes } = await supabase.rpc('give_bp_xp', {
@@ -219,8 +219,8 @@ export default function AdminQuests() {
           p_reason: `Missão concluída: ${questDef.name}`,
         })
         if (bpRes && bpRes.success === false) {
-          console.warn('Erro ao entregar BP XP:', bpRes.reason)
-          bpWarning = ' (BP XP não entregue: Sem passe ativo)'
+          console.warn('Erro ao entregar Troféus:', bpRes.reason)
+          bpWarning = ' (Troféus não entregues: Sem passe ativo)'
         }
       }
 
@@ -321,8 +321,8 @@ export default function AdminQuests() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-1">⚔️ BP XP (Battle Pass)</label>
-                <p className="text-[10px] text-slate-500 mb-2">XP exclusivo para progressão no Battle Pass. 0 = não concede BP XP.</p>
+                <label className="block text-xs font-bold text-amber-500 uppercase tracking-wider mb-1">🏆 Troféus</label>
+                <p className="text-[10px] text-slate-500 mb-2">Pontos para Ranking e Caminho do Passe. 0 = não concede Troféus.</p>
                 <input type="number" min={0} value={bpXp} onChange={e => setBpXp(Number(e.target.value))} className="input-field w-full" placeholder="Ex: 40" />
               </div>
 

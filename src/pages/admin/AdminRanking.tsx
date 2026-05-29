@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GlassCard, PageHeader, RankBadge, EmptyState, Skeleton } from '@/components/ui/index'
 import type { Season } from '@/types'
-import { BarChart3, Zap } from 'lucide-react'
+import { BarChart3, Trophy } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { AvatarFrame } from '@/components/ui/AvatarFrame'
 
@@ -40,14 +40,27 @@ export default function AdminRanking() {
       .eq('season_id', selectedSeason).order('rank_position', { ascending: true })
       
     // Ajusta o array do supabase
-    const mappedData = (data ?? []).map((r: any) => ({
-      ...r,
-      profile: {
-        ...r.profile,
-        active_title: Array.isArray(r.profile.active_title) ? r.profile.active_title[0] : r.profile.active_title,
-        active_frame: Array.isArray(r.profile.active_frame) ? r.profile.active_frame[0] : r.profile.active_frame,
+    const { data: bpSeason } = await supabase.from('battle_pass_seasons').select('id').eq('is_active', true).is('deleted_at', null).maybeSingle()
+    let bpMap: Record<string, number> = {}
+    if (bpSeason) {
+      const { data: bpProg } = await supabase.from('battle_pass_progress').select('employee_id, total_bp_xp').eq('season_id', bpSeason.id)
+      if (bpProg) {
+        for (const p of bpProg) bpMap[p.employee_id] = p.total_bp_xp
       }
-    }))
+    }
+
+    const mappedData = (data ?? [])
+      .map((r: any) => ({
+        ...r,
+        total_xp: bpMap[r.employee_id] || 0, // Troféus
+        profile: {
+          ...r.profile,
+          active_title: Array.isArray(r.profile.active_title) ? r.profile.active_title[0] : r.profile.active_title,
+          active_frame: Array.isArray(r.profile.active_frame) ? r.profile.active_frame[0] : r.profile.active_frame,
+        }
+      }))
+      .sort((a, b) => b.total_xp - a.total_xp)
+      .map((r, i) => ({ ...r, rank_position: i + 1 }))
       
     setRankings(mappedData as AdminRankingEntry[])
     setLoading(false)
@@ -81,7 +94,7 @@ export default function AdminRanking() {
                 <tr className="text-left text-xs font-inter font-medium text-higame-muted border-b border-higame-border">
                   <th className="px-4 py-3 w-12">#</th>
                   <th className="px-4 py-3">Colaborador</th>
-                  <th className="px-4 py-3 text-right">XP</th>
+                  <th className="px-4 py-3 text-right">Troféus</th>
                   <th className="px-4 py-3 text-right">Score</th>
                 </tr>
               </thead>
@@ -111,8 +124,8 @@ export default function AdminRanking() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className="font-outfit font-bold text-higame-purple text-sm flex items-center justify-end gap-1">
-                        <Zap className="w-3 h-3" />{entry.total_xp.toLocaleString()}
+                      <span className="font-outfit font-bold text-amber-500 text-sm flex items-center justify-end gap-1">
+                        <Trophy className="w-3 h-3" />{entry.total_xp.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">

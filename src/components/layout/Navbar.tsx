@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Coins, Star } from 'lucide-react'
+import { Bell, ChevronDown, Coins, Star, Trophy } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getInitials, calculateLevel } from '@/lib/utils'
 import { useState, useEffect } from 'react'
@@ -15,6 +15,7 @@ export function Navbar() {
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [totalXp, setTotalXp] = useState(0)
+  const [totalTrophies, setTotalTrophies] = useState(0)
   const [xpPerLevel, setXpPerLevel] = useState(1000)
   const navigate = useNavigate()
 
@@ -31,9 +32,19 @@ export function Navbar() {
         
         if (season) {
           const { data: rank } = await supabase
-            .from('rankings').select('total_xp').eq('employee_id', profile!.id).eq('season_id', season.id).single()
+            .from('rankings').select('total_xp').eq('employee_id', profile!.id).eq('season_id', season.id).maybeSingle()
           
           if (rank) setTotalXp(rank.total_xp)
+        }
+
+        // Fetch Trophies (BP XP)
+        const { data: bpSeason } = await supabase
+          .from('battle_pass_seasons').select('id').eq('is_active', true).is('deleted_at', null).maybeSingle()
+        
+        if (bpSeason) {
+          const { data: bpProgress } = await supabase
+            .from('battle_pass_progress').select('total_bp_xp').eq('employee_id', profile!.id).eq('season_id', bpSeason.id).maybeSingle()
+          if (bpProgress) setTotalTrophies(bpProgress.total_bp_xp)
         }
 
         // Fetch Notifications
@@ -98,12 +109,16 @@ export function Navbar() {
       {/* Direita: stats + notificação + avatar */}
       <div className="flex items-center gap-3 sm:gap-4">
         
-        {/* Stats (Level & Coins) */}
+        {/* Stats (Level, Trophies, Coins) */}
         {profile?.role === 'employee' && (
           <div className="hidden sm:flex items-center gap-2 mr-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-higame-surface2 border border-higame-border rounded-xl shadow-inner">
-              <Star className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-outfit font-bold text-white">Nível {calculateLevel(totalXp, xpPerLevel)}</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-higame-surface2 border border-sky-500/20 rounded-xl shadow-inner">
+              <Star className="w-4 h-4 text-sky-400" />
+              <span className="text-xs font-outfit font-bold text-sky-400">Nível {calculateLevel(totalXp, xpPerLevel)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-higame-surface2 border border-orange-500/20 rounded-xl shadow-glow-gold/10">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-outfit font-bold text-amber-500">{totalTrophies.toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-higame-surface2 border border-amber-500/20 rounded-xl shadow-glow-gold/10">
               <Coins className="w-4 h-4 text-amber-400" />
