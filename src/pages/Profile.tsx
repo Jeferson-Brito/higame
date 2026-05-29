@@ -7,7 +7,8 @@ import { XPProgressBar } from '@/components/XPProgressBar'
 import { getInitials, calculateLevel } from '@/lib/utils'
 import { getAppSettings } from '@/lib/ranking'
 import type { Ranking, EmployeeResult, KpiDefinition } from '@/types'
-import { AvatarFrame } from '@/components/ui/AvatarFrame'
+import { AvatarFrame, FramePreview } from '@/components/ui/AvatarFrame'
+import { ProfileBanner, BannerPreview } from '@/components/ui/ProfileBanner'
 import { Zap, Star, Trophy, Edit2, Award, ArrowLeft, LayoutDashboard, Package, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -28,6 +29,7 @@ interface ProfileData {
   team: string | null
   active_title_id: string | null
   active_frame_id: string | null
+  active_banner_id: string | null
   active_title?: { name: string } | null
 }
 
@@ -88,7 +90,7 @@ export default function Profile() {
       // 1. Busca os dados base do perfil alvo
       const { data: profData } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, position, team, active_title_id, active_frame_id, active_title:store_items!fk_active_title(name)')
+        .select('id, full_name, avatar_url, position, team, active_title_id, active_frame_id, active_banner_id, active_title:store_items!fk_active_title(name)')
         .eq('id', targetId)
         .single()
       
@@ -159,6 +161,7 @@ export default function Profile() {
       const payload: any = {}
       if (type === 'title') payload.active_title_id = itemId
       if (type === 'frame') payload.active_frame_id = itemId
+      if (type === 'banner') payload.active_banner_id = itemId
       
       const { error } = await supabase.from('profiles').update(payload).eq('id', targetId)
       if (error) throw error
@@ -194,19 +197,22 @@ export default function Profile() {
 
       <PageHeader title={isOwner ? "Meu Perfil" : "Perfil do Jogador"} />
 
-      {/* Card principal */}
-      <GlassCard className="p-6 relative overflow-hidden">
-        {/* Efeito de fundo */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-higame-purple/20 blur-[100px] rounded-full pointer-events-none" />
-        
-        <div className="flex flex-col sm:flex-row sm:items-center gap-6 relative z-10">
-          {/* Avatar com Moldura */}
-          <AvatarFrame 
-            avatarUrl={targetProfile.avatar_url} 
-            fullName={targetProfile.full_name} 
-            size="xl"
-            frameRarity={inventory.find(i => i.id === targetProfile.active_frame_id)?.rarity}
-          />
+      {/* Card principal com Banner de fundo */}
+      <ProfileBanner 
+        bannerUrl={inventory.find(i => i.id === targetProfile.active_banner_id)?.asset_url}
+        className="rounded-3xl shadow-2xl relative overflow-hidden"
+        height="auto"
+      >
+        <div className="p-6 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+            {/* Avatar com Moldura */}
+            <AvatarFrame 
+              avatarUrl={targetProfile.avatar_url} 
+              fullName={targetProfile.full_name} 
+              size="xl"
+              frameRarity={inventory.find(i => i.id === targetProfile.active_frame_id)?.rarity}
+              frameUrl={inventory.find(i => i.id === targetProfile.active_frame_id)?.asset_url}
+            />
 
           {/* Info */}
           <div className="flex-1">
@@ -279,7 +285,7 @@ export default function Profile() {
         <div className="mt-6">
           <XPProgressBar totalXp={totalXp} xpPerLevel={xpPerLevel} />
         </div>
-      </GlassCard>
+      </ProfileBanner>
 
       {/* TABS DE NAVEGAÇÃO */}
       {isOwner && (
@@ -365,7 +371,7 @@ export default function Profile() {
             <Package className="w-5 h-5 text-amber-500" /> Seus Cosméticos
           </h3>
           
-          {inventory.filter(i => ['title', 'frame'].includes(i.type)).length === 0 ? (
+          {inventory.filter(i => ['title', 'frame', 'banner'].includes(i.type)).length === 0 ? (
             <div className="text-center py-10 border border-dashed border-white/10 rounded-xl">
               <p className="text-sm text-slate-500 mb-4">Seu inventário está vazio.</p>
               <button onClick={() => navigate('/store')} className="btn-primary text-sm px-4 py-2">
@@ -374,13 +380,25 @@ export default function Profile() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {inventory.filter(i => ['title', 'frame'].includes(i.type)).map(item => {
-                const isEquipped = item.id === targetProfile.active_title_id || item.id === targetProfile.active_frame_id
+              {inventory.filter(i => ['title', 'frame', 'banner'].includes(i.type)).map(item => {
+                const isEquipped = item.id === targetProfile.active_title_id || 
+                                   item.id === targetProfile.active_frame_id ||
+                                   item.id === targetProfile.active_banner_id
                 
                 return (
                   <div key={item.id} className={`p-4 rounded-xl border flex flex-col items-center text-center transition-all ${isEquipped ? 'bg-higame-purple/10 border-higame-purple' : 'bg-slate-900/50 border-white/10 hover:border-white/20'}`}>
-                    <div className="text-3xl mb-3">{item.asset_url || '✨'}</div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{item.type === 'title' ? 'Título' : 'Moldura'}</p>
+                    <div className="text-3xl mb-3 w-full flex justify-center">
+                      {item.asset_url?.startsWith('frame:') ? (
+                        <div className="scale-125"><FramePreview frameKey={item.asset_url} size={48} /></div>
+                      ) : item.asset_url?.startsWith('banner:') ? (
+                        <BannerPreview bannerKey={item.asset_url} width={120} height={60} />
+                      ) : (
+                        item.asset_url || '✨'
+                      )}
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      {item.type === 'title' ? 'Título' : item.type === 'banner' ? 'Banner' : 'Moldura'}
+                    </p>
                     <p className="text-sm font-bold text-white mb-4">{item.name}</p>
                     
                     <button 
