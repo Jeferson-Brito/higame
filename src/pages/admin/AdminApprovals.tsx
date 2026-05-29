@@ -118,19 +118,28 @@ export default function AdminApprovals() {
       }
 
       // 4. Entregar BP XP
+      let bpWarning = ''
       if (quest.bp_xp_reward > 0) {
-        await supabase.rpc('give_bp_xp', {
+        const { data: bpRes } = await supabase.rpc('give_bp_xp', {
           p_employee_id: empId,
           p_bp_xp: quest.bp_xp_reward,
           p_reason: `Missão concluída: ${quest.name}`,
         })
+        if (bpRes && bpRes.success === false) {
+          console.warn('Erro ao entregar BP XP:', bpRes.reason)
+          bpWarning = ' (BP XP não entregue: Sem passe ativo)'
+        }
       }
 
       const { data: activeSeason } = await supabase.from('seasons').select('id').eq('status', 'active').maybeSingle()
       if (!activeSeason) {
-        toast.success(`Comprovante de ${approval.employee.full_name} aprovado! ATENÇÃO: XP não entregue pois não há Temporada Ativa.`, { duration: 6000 })
+        toast.success(`Comprovante aprovado! ATENÇÃO: XP não entregue pois não há Temporada Ativa.${bpWarning}`, { duration: 6000 })
       } else {
-        toast.success(`Comprovante de ${approval.employee.full_name} aprovado!`)
+        if (bpWarning) {
+          toast.success(`Comprovante aprovado!${bpWarning}`, { duration: 6000 })
+        } else {
+          toast.success(`Comprovante de ${approval.employee.full_name} aprovado!`)
+        }
       }
       
       setApprovals(prev => prev.filter(a => a.id !== approval.id))

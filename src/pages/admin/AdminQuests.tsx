@@ -211,12 +211,17 @@ export default function AdminQuests() {
       }
 
       // 3. Entregar BP XP (se a quest tiver bp_xp_reward > 0)
+      let bpWarning = ''
       if (questDef.bp_xp_reward > 0) {
-        await supabase.rpc('give_bp_xp', {
+        const { data: bpRes } = await supabase.rpc('give_bp_xp', {
           p_employee_id: selectedEmp,
           p_bp_xp: questDef.bp_xp_reward,
           p_reason: `Missão concluída: ${questDef.name}`,
         })
+        if (bpRes && bpRes.success === false) {
+          console.warn('Erro ao entregar BP XP:', bpRes.reason)
+          bpWarning = ' (BP XP não entregue: Sem passe ativo)'
+        }
       }
 
       // 4. Notificar o usuário
@@ -235,9 +240,13 @@ export default function AdminQuests() {
       })
 
       if (!season) {
-        toast.success(`Missão concluída! Moedas entregues. ATENÇÃO: XP não entregue pois não há Temporada Ativa!`, { duration: 6000 })
+        toast.success(`Missão concluída! Moedas entregues. ATENÇÃO: XP normal não entregue pois não há Temporada Ativa!${bpWarning}`, { duration: 6000 })
       } else {
-        toast.success('Missão concluída com sucesso! XP e Moedas entregues.')
+        if (bpWarning) {
+          toast.success(`Missão concluída! XP e Moedas entregues.${bpWarning}`, { duration: 6000 })
+        } else {
+          toast.success('Missão concluída com sucesso! XP e Moedas entregues.')
+        }
       }
       setSelectedEmp('')
       setSelectedQuest('')
