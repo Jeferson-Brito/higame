@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Star, Award, Flame } from 'lucide-react'
+import confetti from 'canvas-confetti'
 
 export type PremiumToastType = 'level_up' | 'badge' | 'streak'
 
@@ -56,9 +57,37 @@ export function PremiumToast({ data, onDismiss, duration = 5000 }: PremiumToastP
   const IconComponent = config.icon
 
   useEffect(() => {
+    // Se for um level up, dispara a animação de confetes!
+    if (data.type === 'level_up') {
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#8b5cf6', '#00f5c4', '#f59e0b']
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#8b5cf6', '#00f5c4', '#f59e0b']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
+    }
+
     const timer = setTimeout(onDismiss, duration)
     return () => clearTimeout(timer)
-  }, [onDismiss, duration])
+  }, [onDismiss, duration, data.type])
 
   return (
     <motion.div
