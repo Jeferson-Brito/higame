@@ -29,8 +29,9 @@ interface StoreItem {
   type: 'frame' | 'banner' | 'title' | 'real_reward'
   rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic'
   price_coins: number
-  asset_url: string
+  asset_url: string | null
   is_active: boolean
+  purchase_limit: number | null
 }
 
 const EMOJI_LIBRARY = [
@@ -69,6 +70,7 @@ export default function AdminStore() {
   const [type, setType] = useState<'frame'|'banner'|'title'|'real_reward'>('real_reward')
   const [rarity, setRarity] = useState<'common'|'rare'|'epic'|'legendary'|'mythic'>('common')
   const [price, setPrice] = useState(1000)
+  const [purchaseLimit, setPurchaseLimit] = useState<number | null>(null)
   const [selectedIcon, setSelectedIcon] = useState('🎁')
   const [saving, setSaving] = useState(false)
 
@@ -143,6 +145,7 @@ export default function AdminStore() {
     setType('real_reward')
     setRarity('common')
     setPrice(0)
+    setPurchaseLimit(null)
     setSelectedIcon('🎁')
   }
 
@@ -154,6 +157,7 @@ export default function AdminStore() {
     setType(item.type)
     setRarity(item.rarity)
     setPrice(item.price_coins)
+    setPurchaseLimit(item.purchase_limit)
     setSelectedIcon(item.asset_url || '🎁')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -169,7 +173,8 @@ export default function AdminStore() {
         rarity, 
         price_coins: price, 
         asset_url: selectedIcon,
-        is_active: true
+        is_active: true,
+        purchase_limit: purchaseLimit
       }
 
       if (editingId) {
@@ -413,8 +418,14 @@ export default function AdminStore() {
                 <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Preço (HiCoins) — 0 = Grátis</label>
                 <input type="number" required min="0" value={price} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} className="input-field w-full" />
                 {price === 0 && (
-                  <p className="text-xs text-higame-success font-bold mt-1">✅ Este item será exibido como <strong>Grátis</strong> na loja.</p>
+                  <p className="text-xs text-higame-success font-bold mt-1">✅ Este item será exibido como <strong>Grátis</strong> na loja e terá resgate automático.</p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Limite de Resgates (0 = Ilimitado)</label>
+                <input type="number" min="0" value={purchaseLimit || 0} onChange={e => { const val = Number(e.target.value); setPurchaseLimit(val > 0 ? val : null) }} className="input-field w-full" placeholder="Ex: 1" />
+                <p className="text-[10px] text-slate-500 mt-1">Deixe 0 para permitir que os usuários comprem este item quantas vezes quiserem.</p>
               </div>
 
               <button disabled={saving} type="submit" className="w-full btn-primary py-3 mt-4 flex justify-center items-center gap-2">

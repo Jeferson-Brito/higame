@@ -16,6 +16,7 @@ interface StoreItem {
   rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic'
   price_coins: number
   asset_url: string
+  purchase_limit: number | null
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -32,19 +33,22 @@ export default function Store() {
   const [items, setItems] = useState<StoreItem[]>([])
   const [search, setSearch] = useState('')
   const [balance, setBalance] = useState(0)
+  const [purchases, setPurchases] = useState<any[]>([])
   const [buyingId, setBuyingId] = useState<string | null>(null)
 
   const fetchStore = useCallback(async () => {
     if (!profile?.id) return
     setLoading(true)
     try {
-      const [{ data: storeData }, { data: profileData }] = await Promise.all([
+      const [{ data: storeData }, { data: profileData }, { data: purchaseData }] = await Promise.all([
         supabase.from('store_items').select('*').eq('is_active', true).order('price_coins', { ascending: true }),
-        supabase.from('profiles').select('coins_balance').eq('id', profile.id).single()
+        supabase.from('profiles').select('coins_balance').eq('id', profile.id).single(),
+        supabase.from('employee_purchases').select('item_id').eq('employee_id', profile.id)
       ])
       
       setItems((storeData ?? []) as StoreItem[])
       setBalance(profileData?.coins_balance ?? 0)
+      setPurchases(purchaseData ?? [])
     } catch (err) {
       console.error(err)
     } finally {
@@ -82,7 +86,8 @@ export default function Store() {
       // Apenas atualizamos a tela para ficar fluído.
       const newBalance = balance - item.price_coins
       setBalance(newBalance)
-      toast.success('Compra realizada! O RH será notificado.', { icon: '🎉' })
+      setPurchases(prev => [...prev, { item_id: item.id }])
+      toast.success(item.price_coins === 0 ? 'Item resgatado com sucesso!' : 'Compra realizada! O RH será notificado.', { icon: '🎉' })
     } catch (err: any) {
       console.error(err)
       toast.error(err.message || 'Erro ao processar compra.')
@@ -145,6 +150,8 @@ export default function Store() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item, i) => {
             const canAfford = balance >= item.price_coins
+            const purchaseCount = purchases.filter(p => p.item_id === item.id).length
+            const hasReachedLimit = item.purchase_limit !== null && purchaseCount >= item.purchase_limit
             
             return (
               <motion.div
@@ -195,19 +202,23 @@ export default function Store() {
                     
                     <button
                       onClick={() => handleBuy(item)}
-                      disabled={!canAfford || buyingId === item.id}
+                      disabled={!canAfford || buyingId === item.id || hasReachedLimit}
                       className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-                        buyingId === item.id 
-                          ? 'bg-slate-700 text-white cursor-wait'
-                          : canAfford
-                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:scale-105 shadow-glow-gold'
-                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        hasReachedLimit
+                          ? 'bg-higame-purple/20 text-higame-purple border border-higame-purple/30 cursor-not-allowed'
+                          : buyingId === item.id 
+                            ? 'bg-slate-700 text-white cursor-wait'
+                            : canAfford
+                              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:scale-105 shadow-glow-gold'
+                              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                       }`}
                     >
-                      {buyingId === item.id ? (
+                      {hasReachedLimit ? (
+                        <><Check className="w-4 h-4" /> {item.price_coins === 0 ? 'Resgatado' : 'Comprado'}</>
+                      ) : buyingId === item.id ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       ) : canAfford ? (
-                        <><ShoppingCart className="w-4 h-4" /> Comprar</>
+                        <><ShoppingCart className="w-4 h-4" /> {item.price_coins === 0 ? 'Resgatar' : 'Comprar'}</>
                       ) : (
                         'Sem Saldo'
                       )}
