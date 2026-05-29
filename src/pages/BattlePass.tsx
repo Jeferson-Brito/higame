@@ -551,7 +551,7 @@ export default function BattlePass() {
           ) : (
             <div
               ref={trackRef}
-              className="flex items-center overflow-x-auto no-scrollbar scroll-smooth px-6 pt-32 pb-8"
+              className="flex items-center overflow-x-auto no-scrollbar scroll-smooth px-16 pt-32 pb-8"
               style={{ scrollSnapType: 'x mandatory', gap: 0, minHeight: 240 }}
             >
               {rewards.map((reward, i) => {
