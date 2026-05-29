@@ -4,7 +4,7 @@ import { PageHeader, GlassCard, Skeleton } from '@/components/ui/index'
 import type { BattlePassSeason, BattlePassReward, BattlePassProgress, RarityTier, BpRewardType } from '@/types'
 import {
   Shield, Plus, Edit2, Trash2, Save, X, CheckCircle2,
-  Users, Zap, Gift, Coins, Award, Star, TrendingUp, ToggleLeft, ToggleRight
+  Users, Zap, Gift, Coins, Award, Star, TrendingUp, ToggleLeft, ToggleRight, Trophy
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 

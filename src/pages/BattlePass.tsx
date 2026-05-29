@@ -278,6 +278,7 @@ export default function BattlePass() {
 
   const currentLevel = progress?.current_level ?? 0
   const currentXp    = progress?.current_xp    ?? 0
+  const totalXp      = progress?.total_bp_xp   ?? 0
   const xpPerLevel   = season?.xp_per_level    ?? 1000
   const maxLevel     = season?.max_level        ?? 50
   const progressPct  = Math.min(100, (currentXp / xpPerLevel) * 100)
@@ -524,7 +525,8 @@ export default function BattlePass() {
       )}
 
       {/* ── COMO GANHAR TROFÉUS ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { icon: '🎯', label: 'Missões Diárias',  desc: 'Complete missões diárias para ganhar Troféus', color: 'border-blue-500/20 bg-blue-900/10' },
           { icon: '📅', label: 'Missões Semanais', desc: 'Missões semanais rendem mais Troféus',          color: 'border-purple-500/20 bg-purple-900/10' },
