@@ -181,18 +181,22 @@ function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyL
             <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }}>
               <CheckCircle2 className="w-6 h-6 text-emerald-400" />
             </motion.div>
-          ) : !isUnlocked ? (
-            <div className="flex flex-col items-center">
-              <Lock className={`${isMilestone ? 'w-7 h-7' : 'w-5 h-5'} text-slate-700`} />
-            </div>
           ) : (
-            <motion.div
-              animate={cfg.pulse ? { scale: [1, 1.15, 1], filter: ['brightness(1)', 'brightness(1.3)', 'brightness(1)'] } : {}}
-              transition={{ repeat: Infinity, duration: 2.2 }}
-              className={isMilestone ? 'text-3xl' : 'text-2xl'}
-            >
-              {reward.icon || <Icon className={`${isMilestone ? 'w-7 h-7' : 'w-5 h-5'} ${cfg.text}`} />}
-            </motion.div>
+            <div className="relative flex items-center justify-center">
+              <motion.div
+                animate={isUnlocked && cfg.pulse ? { scale: [1, 1.15, 1], filter: ['brightness(1)', 'brightness(1.3)', 'brightness(1)'] } : {}}
+                transition={{ repeat: Infinity, duration: 2.2 }}
+                className={`${isMilestone ? 'text-3xl' : 'text-2xl'} ${!isUnlocked ? 'opacity-50 grayscale' : ''}`}
+              >
+                {reward.icon || <Icon className={`${isMilestone ? 'w-7 h-7' : 'w-5 h-5'} ${!isUnlocked ? 'text-slate-500' : cfg.text}`} />}
+              </motion.div>
+              
+              {!isUnlocked && (
+                <div className="absolute -bottom-1 -right-2 bg-slate-900/80 backdrop-blur rounded-full p-0.5 border border-white/10">
+                  <Lock className="w-2.5 h-2.5 text-slate-400" />
+                </div>
+              )}
+            </div>
           )}
         </div>
 
