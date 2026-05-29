@@ -141,75 +141,75 @@ function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyL
         )}
       </div>
 
-      {/* CARD */}
-      <motion.div
-        onHoverStart={() => setTooltip(true)}
-        onHoverEnd={() => setTooltip(false)}
-        whileHover={canClaim ? { y: -6, scale: 1.05 } : isUnlocked ? { y: -3 } : {}}
-        className={`
-          relative rounded-2xl border-2 flex flex-col items-center justify-between overflow-hidden cursor-default transition-all duration-300
-          ${isClaimed
-            ? 'border-emerald-500/60 bg-gradient-to-b from-emerald-900/50 to-slate-900/90'
-            : isUnlocked
-              ? `${cfg.border} ${cfg.cardBg} ${cfg.glow}`
-              : 'border-white/6 bg-gradient-to-b from-slate-900/80 to-slate-950/90'
-          }
-          ${isMyLevel ? 'ring-2 ring-white/70 ring-offset-2 ring-offset-slate-950' : ''}
-          ${isMilestone && isUnlocked && !isClaimed ? 'ring-1 ring-offset-1 ring-offset-slate-950 ' + cfg.border : ''}
-        `}
-        style={{ width: cardWidth, height: cardHeight, padding: '7px 5px 5px' }}
-      >
-        {/* Efeito de partícula/glow no fundo do card */}
-        {isUnlocked && !isClaimed && (
-          <div
-            className="absolute inset-0 rounded-xl pointer-events-none"
-            style={{ background: `radial-gradient(ellipse at 50% 0%, ${cfg.glowColor} 0%, transparent 70%)` }}
-          />
-        )}
-
-        {/* Badge de raridade */}
-        <div className={`w-full text-center relative z-10`}>
-          <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full text-white leading-none
-            ${isClaimed ? 'bg-emerald-600/80' : `bg-gradient-to-r ${cfg.gradient}`}`}>
-            {isClaimed ? '✓' : isMilestone ? cfg.label : cfg.label.substring(0, 3)}
-          </span>
-        </div>
-
-        {/* Ícone / emoji */}
-        <div className="flex-1 flex items-center justify-center relative z-10 py-1">
-          {isClaimed ? (
-            <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }}>
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-            </motion.div>
-          ) : (
-            <div className="relative flex items-center justify-center">
-              <motion.div
-                animate={isUnlocked && cfg.pulse ? { scale: [1, 1.15, 1], filter: ['brightness(1)', 'brightness(1.3)', 'brightness(1)'] } : {}}
-                transition={{ repeat: Infinity, duration: 2.2 }}
-                className={`${isMilestone ? 'text-3xl' : 'text-2xl'} ${!isUnlocked ? 'opacity-50 grayscale' : ''}`}
-              >
-                {reward.icon || <Icon className={`${isMilestone ? 'w-7 h-7' : 'w-5 h-5'} ${!isUnlocked ? 'text-slate-500' : cfg.text}`} />}
-              </motion.div>
-              
-              {!isUnlocked && (
-                <div className="absolute -bottom-1 -right-2 bg-slate-900/80 backdrop-blur rounded-full p-0.5 border border-white/10">
-                  <Lock className="w-2.5 h-2.5 text-slate-400" />
-                </div>
-              )}
-            </div>
+      {/* CARD E TOOLTIP WRAPPER */}
+      <div className="relative" onMouseEnter={() => setTooltip(true)} onMouseLeave={() => setTooltip(false)}>
+        <motion.div
+          whileHover={canClaim ? { y: -6, scale: 1.05 } : isUnlocked ? { y: -3 } : {}}
+          className={`
+            relative rounded-2xl border-2 flex flex-col items-center justify-between overflow-hidden cursor-default transition-all duration-300
+            ${isClaimed
+              ? 'border-emerald-500/60 bg-gradient-to-b from-emerald-900/50 to-slate-900/90'
+              : isUnlocked
+                ? `${cfg.border} ${cfg.cardBg} ${cfg.glow}`
+                : 'border-white/6 bg-gradient-to-b from-slate-900/80 to-slate-950/90'
+            }
+            ${isMyLevel ? 'ring-2 ring-white/70 ring-offset-2 ring-offset-slate-950' : ''}
+            ${isMilestone && isUnlocked && !isClaimed ? 'ring-1 ring-offset-1 ring-offset-slate-950 ' + cfg.border : ''}
+          `}
+          style={{ width: cardWidth, height: cardHeight, padding: '7px 5px 5px' }}
+        >
+          {/* Efeito de partícula/glow no fundo do card */}
+          {isUnlocked && !isClaimed && (
+            <div
+              className="absolute inset-0 rounded-xl pointer-events-none"
+              style={{ background: `radial-gradient(ellipse at 50% 0%, ${cfg.glowColor} 0%, transparent 70%)` }}
+            />
           )}
-        </div>
 
-        {/* Nome */}
-        <p className={`text-[8px] font-bold text-center leading-tight w-full truncate px-0.5 relative z-10
-          ${isClaimed ? 'text-emerald-400' : isUnlocked ? 'text-white' : 'text-slate-600'}`}>
-          {reward.name}
-        </p>
+          {/* Badge de raridade */}
+          <div className={`w-full text-center relative z-10`}>
+            <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full text-white leading-none
+              ${isClaimed ? 'bg-emerald-600/80' : `bg-gradient-to-r ${cfg.gradient}`}`}>
+              {isClaimed ? '✓' : isMilestone ? cfg.label : cfg.label.substring(0, 3)}
+            </span>
+          </div>
 
-        {/* Shimmer para lendário/mítico */}
-        {isUnlocked && !isClaimed && cfg.pulse && (
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/8 to-transparent animate-shimmer pointer-events-none" />
-        )}
+          {/* Ícone / emoji */}
+          <div className="flex-1 flex items-center justify-center relative z-10 py-1">
+            {isClaimed ? (
+              <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }}>
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              </motion.div>
+            ) : (
+              <div className="relative flex items-center justify-center">
+                <motion.div
+                  animate={isUnlocked && cfg.pulse ? { scale: [1, 1.15, 1], filter: ['brightness(1)', 'brightness(1.3)', 'brightness(1)'] } : {}}
+                  transition={{ repeat: Infinity, duration: 2.2 }}
+                  className={`${isMilestone ? 'text-3xl' : 'text-2xl'} ${!isUnlocked ? 'opacity-50 grayscale' : ''}`}
+                >
+                  {reward.icon || <Icon className={`${isMilestone ? 'w-7 h-7' : 'w-5 h-5'} ${!isUnlocked ? 'text-slate-500' : cfg.text}`} />}
+                </motion.div>
+                
+                {!isUnlocked && (
+                  <div className="absolute -bottom-1 -right-2 bg-slate-900/80 backdrop-blur rounded-full p-0.5 border border-white/10">
+                    <Lock className="w-2.5 h-2.5 text-slate-400" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Nome */}
+          <p className={`text-[8px] font-bold text-center leading-tight w-full truncate px-0.5 relative z-10
+            ${isClaimed ? 'text-emerald-400' : isUnlocked ? 'text-white' : 'text-slate-600'}`}>
+            {reward.name}
+          </p>
+
+          {/* Shimmer para lendário/mítico */}
+          {isUnlocked && !isClaimed && cfg.pulse && (
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/8 to-transparent animate-shimmer pointer-events-none" />
+          )}
+        </motion.div>
 
         {/* Tooltip */}
         <AnimatePresence>
@@ -234,7 +234,7 @@ function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyL
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Botão resgatar */}
       <div className="mt-1.5 h-5 flex items-center justify-center">
