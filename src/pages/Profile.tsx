@@ -132,7 +132,10 @@ export default function Profile() {
       setBadges(badgesData.data ?? [])
       
       if (inventoryData.data) {
-        setInventory(inventoryData.data.map(i => Array.isArray(i.item) ? i.item[0] : i.item))
+        const rawItems = inventoryData.data.map(i => Array.isArray(i.item) ? i.item[0] : i.item)
+        // Deduplica pelo ID do item para evitar repetição visual se tiver comprado várias vezes
+        const uniqueItems = Array.from(new Map(rawItems.filter(Boolean).map(item => [item.id, item])).values())
+        setInventory(uniqueItems)
       }
     } catch (err) {
       console.error(err)
