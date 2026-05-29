@@ -168,9 +168,9 @@ export default function Profile() {
       
       toast.success('Equipado com sucesso!')
       void fetchData() // Recarrega os dados para ver a atualização visual
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      toast.error('Erro ao equipar item.')
+      toast.error(err.message || 'Erro ao equipar item.')
     }
   }
 
