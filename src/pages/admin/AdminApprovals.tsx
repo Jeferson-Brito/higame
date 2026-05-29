@@ -145,8 +145,6 @@ export default function AdminApprovals() {
       <PageHeader 
         title="Aprovações Pendentes" 
         subtitle="Analise comprovantes de missões e cursos enviados pelos colaboradores."
-        icon={ShieldCheck}
-        iconColor="text-higame-purple"
       />
 
       {loading ? (
