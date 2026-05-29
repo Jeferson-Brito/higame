@@ -192,10 +192,22 @@ export default function AdminQuests() {
       if (season) {
         const { data: rank } = await supabase.from('rankings').select('total_xp').eq('employee_id', selectedEmp).eq('season_id', season.id).maybeSingle()
         if (rank) {
-          await supabase.from('rankings').update({ total_xp: rank.total_xp + questDef.xp_reward }).eq('employee_id', selectedEmp).eq('season_id', season.id)
+          const { error: updErr } = await supabase.from('rankings').update({ total_xp: rank.total_xp + questDef.xp_reward }).eq('employee_id', selectedEmp).eq('season_id', season.id)
+          if (updErr) throw updErr
         } else {
-          await supabase.from('rankings').insert({ employee_id: selectedEmp, season_id: season.id, total_xp: questDef.xp_reward })
+          const { error: insErr } = await supabase.from('rankings').insert({ employee_id: selectedEmp, season_id: season.id, total_xp: questDef.xp_reward })
+          if (insErr) throw insErr
         }
+
+        const { error: histErr } = await supabase.from('xp_history').insert({
+          employee_id: selectedEmp,
+          season_id: season.id,
+          xp_delta: questDef.xp_reward,
+          reason: `Missão concluída: ${questDef.name}`
+        })
+        if (histErr) throw histErr
+      } else {
+        console.warn('Nenhuma temporada ativa. XP não entregue.')
       }
 
       // 3. Entregar BP XP (se a quest tiver bp_xp_reward > 0)
@@ -222,7 +234,11 @@ export default function AdminQuests() {
         event_data: { quest_name: questDef.name, xp_reward: questDef.xp_reward }
       })
 
-      toast.success('Missão concluída com sucesso! XP e Moedas entregues.')
+      if (!season) {
+        toast.success(`Missão concluída! Moedas entregues. ATENÇÃO: XP não entregue pois não há Temporada Ativa!`, { duration: 6000 })
+      } else {
+        toast.success('Missão concluída com sucesso! XP e Moedas entregues.')
+      }
       setSelectedEmp('')
       setSelectedQuest('')
     } catch (err) {

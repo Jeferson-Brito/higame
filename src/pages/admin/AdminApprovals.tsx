@@ -126,7 +126,13 @@ export default function AdminApprovals() {
         })
       }
 
-      toast.success(`Comprovante de ${approval.employee.full_name} aprovado!`)
+      const { data: activeSeason } = await supabase.from('seasons').select('id').eq('status', 'active').maybeSingle()
+      if (!activeSeason) {
+        toast.success(`Comprovante de ${approval.employee.full_name} aprovado! ATENÇÃO: XP não entregue pois não há Temporada Ativa.`, { duration: 6000 })
+      } else {
+        toast.success(`Comprovante de ${approval.employee.full_name} aprovado!`)
+      }
+      
       setApprovals(prev => prev.filter(a => a.id !== approval.id))
     } catch (err: any) {
       console.error(err)
