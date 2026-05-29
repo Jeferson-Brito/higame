@@ -103,187 +103,100 @@ function LevelUpModal({ level, reward, onClose }: { level: number; reward?: Batt
 }
 
 // ============================================================
-// REWARD CARD — estilo game premium
+// REWARD CARD & TRACK MARKER (Brawl Stars Style)
 // ============================================================
 
-function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyLevel, isMilestone }: {
+function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyLevel, milestoneXP }: {
   reward: BattlePassReward; isUnlocked: boolean; isClaimed: boolean
   onClaim: (r: BattlePassReward) => void; playersHere: PlayerOnTrack[]
-  isMyLevel: boolean; isMilestone: boolean
+  isMyLevel: boolean; milestoneXP: number
 }) {
-  const [tooltip, setTooltip] = useState(false)
   const cfg = RARITY_CONFIG[reward.rarity]
   const Icon = REWARD_TYPE_ICON[reward.reward_type] || Gift
-  const canClaim = isUnlocked && !isClaimed
-
-  const cardHeight = isMilestone ? 110 : 90
-  const cardWidth  = isMilestone ? 80 : 68
 
   return (
-    <div className="flex flex-col items-center flex-shrink-0 relative" style={{ width: cardWidth }}>
-
-      {/* Avatares dos jogadores neste nível */}
-      <div className="h-8 flex items-end justify-center mb-1.5 relative z-10">
-        {playersHere.slice(0, 4).map((p, idx) => (
-          <div key={p.id} title={p.full_name}
-            className="w-6 h-6 rounded-full border-2 border-slate-950 overflow-hidden flex-shrink-0 -ml-1.5 first:ml-0"
-            style={{ zIndex: 10 - idx }}>
-            {p.avatar_url
-              ? <img src={p.avatar_url} alt={p.full_name} className="w-full h-full object-cover" />
-              : <div className="w-full h-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white text-[8px] font-black">{getInitials(p.full_name)}</div>
-            }
-          </div>
-        ))}
-        {playersHere.length > 4 && (
-          <div className="w-6 h-6 rounded-full border-2 border-slate-950 bg-slate-700 flex items-center justify-center text-[7px] font-black text-slate-300 -ml-1.5">
-            +{playersHere.length - 4}
-          </div>
-        )}
-      </div>
-
-      {/* CARD E TOOLTIP WRAPPER */}
-      <div className="relative" onMouseEnter={() => setTooltip(true)} onMouseLeave={() => setTooltip(false)}>
-        <motion.div
-          whileHover={canClaim ? { y: -6, scale: 1.05 } : isUnlocked ? { y: -3 } : {}}
-          className={`
-            relative rounded-2xl border-2 flex flex-col items-center justify-between overflow-hidden cursor-default transition-all duration-300
-            ${isClaimed
-              ? 'border-emerald-500/60 bg-gradient-to-b from-emerald-900/50 to-slate-900/90'
-              : isUnlocked
-                ? `${cfg.border} ${cfg.cardBg} ${cfg.glow}`
-                : 'border-white/6 bg-gradient-to-b from-slate-900/80 to-slate-950/90'
-            }
-            ${isMyLevel ? 'ring-2 ring-white/70 ring-offset-2 ring-offset-slate-950' : ''}
-            ${isMilestone && isUnlocked && !isClaimed ? 'ring-1 ring-offset-1 ring-offset-slate-950 ' + cfg.border : ''}
-          `}
-          style={{ width: cardWidth, height: cardHeight, padding: '7px 5px 5px' }}
+    <div className="w-[140px] flex flex-col items-center justify-end relative h-[300px] flex-shrink-0" style={{ scrollSnapAlign: 'center' }}>
+      
+      {/* ── CARD DA RECOMPENSA (Acima da linha) ── */}
+      <div className="absolute bottom-[80px] w-full flex justify-center group z-20">
+        <motion.div 
+          whileHover={isUnlocked && !isClaimed ? { y: -10, scale: 1.05 } : {}}
+          className={`relative w-[110px] h-[130px] rounded-xl border-4 flex flex-col items-center justify-center transition-all cursor-pointer 
+            ${isUnlocked && !isClaimed 
+              ? 'bg-[#38bdf8] border-[#0284c7] shadow-[0_10px_0_#0284c7]' 
+              : isClaimed 
+                ? 'bg-[#0f766e] border-[#042f2e] opacity-90' 
+                : 'bg-[#1e293b] border-[#0f172a] opacity-70'
+            }`}
+          onClick={() => isUnlocked && !isClaimed && onClaim(reward)}
         >
-          {/* Efeito de partícula/glow no fundo do card */}
-          {isUnlocked && !isClaimed && (
-            <div
-              className="absolute inset-0 rounded-xl pointer-events-none"
-              style={{ background: `radial-gradient(ellipse at 50% 0%, ${cfg.glowColor} 0%, transparent 70%)` }}
-            />
+          {/* Checkmark de Resgatado */}
+          {isClaimed && (
+            <div className="absolute -top-3 -left-3 bg-[#22c55e] border-2 border-[#166534] w-8 h-8 rounded-full flex items-center justify-center shadow-lg z-20">
+              <CheckCircle2 className="w-5 h-5 text-white font-black" />
+            </div>
           )}
 
-          {/* Badge de raridade */}
-          <div className={`w-full text-center relative z-10`}>
-            <span className={`text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full text-white leading-none
-              ${isClaimed ? 'bg-emerald-600/80' : `bg-gradient-to-r ${cfg.gradient}`}`}>
-              {isClaimed ? '✓' : isMilestone ? cfg.label : cfg.label.substring(0, 3)}
-            </span>
-          </div>
+          {/* Rarity Glow / Shimmer para épico/lendário */}
+          {isUnlocked && !isClaimed && cfg.pulse && (
+            <div className={`absolute inset-0 rounded-lg ${cfg.glow} opacity-60`} />
+          )}
 
-          {/* Ícone / emoji */}
-          <div className="flex-1 flex items-center justify-center relative z-10 py-1">
-            {isClaimed ? (
-              <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }}>
-                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-              </motion.div>
-            ) : (
-              <div className="relative flex items-center justify-center">
-                <motion.div
-                  animate={isUnlocked && cfg.pulse ? { scale: [1, 1.15, 1], filter: ['brightness(1)', 'brightness(1.3)', 'brightness(1)'] } : {}}
-                  transition={{ repeat: Infinity, duration: 2.2 }}
-                  className={`${isMilestone ? 'text-3xl' : 'text-2xl'} ${!isUnlocked ? 'opacity-50 grayscale' : ''}`}
-                >
-                  {reward.icon || <Icon className={`${isMilestone ? 'w-7 h-7' : 'w-5 h-5'} ${!isUnlocked ? 'text-slate-500' : cfg.text}`} />}
-                </motion.div>
-                
-                {!isUnlocked && (
-                  <div className="absolute -bottom-1 -right-2 bg-slate-900/80 backdrop-blur rounded-full p-0.5 border border-white/10">
-                    <Lock className="w-2.5 h-2.5 text-slate-400" />
-                  </div>
-                )}
-              </div>
+          {/* Ícone */}
+          <div className="text-4xl mb-2 relative z-10">
+            {reward.icon || <Icon className={`w-10 h-10 ${isUnlocked ? 'text-white' : 'text-slate-500'}`} />}
+          </div>
+          
+          {/* Faixa inferior com nome */}
+          <div className={`w-full text-center py-1 absolute bottom-0 left-0 right-0 border-t-2 rounded-b-lg overflow-hidden
+            ${isUnlocked && !isClaimed ? 'bg-[#0ea5e9] border-[#0284c7]' : isClaimed ? 'bg-[#0d9488] border-[#115e59]' : 'bg-[#334155] border-[#1e293b]'}`}>
+            <span className="text-[11px] font-black text-white px-1 block truncate leading-tight shadow-sm">{reward.name}</span>
+            {reward.reward_type === 'coins' && reward.reward_value?.amount && (
+              <span className="text-[10px] text-amber-200 font-black flex items-center justify-center gap-1">
+                <Coins className="w-3 h-3" /> {reward.reward_value.amount}
+              </span>
             )}
           </div>
 
-          {/* Nome */}
-          <p className={`text-[8px] font-bold text-center leading-tight w-full truncate px-0.5 relative z-10
-            ${isClaimed ? 'text-emerald-400' : isUnlocked ? 'text-white' : 'text-slate-600'}`}>
-            {reward.name}
-          </p>
-
-          {/* Shimmer para lendário/mítico */}
-          {isUnlocked && !isClaimed && cfg.pulse && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/8 to-transparent animate-shimmer pointer-events-none" />
-          )}
+          {/* Tooltip Hover */}
+          <div className="absolute bottom-full mb-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-slate-900 border-2 border-white/20 text-white p-2 rounded-lg w-[160px] text-center z-50 shadow-2xl">
+            <p className="text-[10px] font-black uppercase text-amber-400 mb-1">{cfg.label}</p>
+            <p className="text-xs">{reward.description || reward.name}</p>
+          </div>
         </motion.div>
+      </div>
 
-        {/* Tooltip */}
-        <AnimatePresence>
-          {tooltip && (
-            <motion.div
-              initial={{ opacity: 0, y: 6, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 w-40 rounded-2xl border ${cfg.border} bg-slate-900/95 backdrop-blur-xl p-3 shadow-2xl pointer-events-none ${cfg.glow}`}
-            >
-              <div className={`text-base mb-1 ${reward.icon ? '' : 'hidden'}`}>{reward.icon}</div>
-              <p className="text-[11px] font-black text-white mb-0.5">{reward.name}</p>
-              {reward.description && <p className="text-[9px] text-slate-400 leading-snug mb-1">{reward.description}</p>}
-              <div className="flex items-center justify-between mt-1">
-                <span className={`text-[9px] font-black uppercase tracking-wider ${cfg.text}`}>{cfg.label}</span>
-                {reward.reward_type === 'coins' && reward.reward_value?.amount && (
-                  <span className="text-[9px] text-amber-400 font-black">+{reward.reward_value.amount} HC</span>
-                )}
-              </div>
-              <div className={`absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent`}
-                style={{ borderTopColor: 'rgba(148,163,184,0.15)' }} />
-            </motion.div>
+      {/* ── CONECTOR DO NÓ (Na Linha) ── */}
+      <div className="absolute bottom-[28px] w-4 h-12 bg-white/20 z-10" />
+      
+      {/* ── MARCADOR DE XP (Abaixo da Linha) ── */}
+      <div className="absolute bottom-0 text-center w-full z-10">
+        <p className="text-lg font-black text-[#93c5fd] drop-shadow-md tracking-wider" style={{ textShadow: '0px 2px 4px rgba(0,0,0,0.5)' }}>
+          {milestoneXP.toLocaleString()}
+        </p>
+      </div>
+
+      {/* ── AVATARES (Onde os jogadores estão) ── */}
+      {playersHere.length > 0 && (
+        <div className="absolute bottom-[90px] -right-5 z-40">
+          {playersHere.slice(0, 1).map(p => (
+            <div key={p.id} title={p.full_name} className="w-10 h-10 rounded-full border-4 border-[#3b82f6] shadow-xl overflow-hidden bg-slate-800">
+              {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover" /> : <span className="flex h-full items-center justify-center text-xs font-black text-white">{getInitials(p.full_name)}</span>}
+            </div>
+          ))}
+          {playersHere.length > 1 && (
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full border-2 border-slate-900">
+              +{playersHere.length - 1}
+            </div>
           )}
-        </AnimatePresence>
-      </div>
-
-      {/* Botão resgatar */}
-      <div className="mt-1.5 h-5 flex items-center justify-center">
-        {canClaim ? (
-          <motion.button
-            animate={{ scale: [1, 1.06, 1] }}
-            transition={{ repeat: Infinity, duration: 1.6 }}
-            onClick={() => onClaim(reward)}
-            className={`px-2 py-0.5 rounded-full text-[8px] font-black text-white bg-gradient-to-r ${cfg.gradient} hover:scale-110 transition-transform leading-none shadow-lg`}
-          >
-            Resgatar!
-          </motion.button>
-        ) : isClaimed ? (
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-        ) : null}
-      </div>
-
-      {/* Badge de nível */}
-      <div className={`
-        text-[9px] font-black px-2 py-0.5 rounded-full mt-0.5 leading-none border
-        ${isMyLevel
-          ? 'bg-white text-slate-950 border-white/50 shadow-[0_0_8px_rgba(255,255,255,0.5)]'
-          : isClaimed
-            ? 'bg-emerald-900/50 text-emerald-400 border-emerald-500/30'
-            : isUnlocked
-              ? `bg-gradient-to-r ${cfg.gradient} text-white border-transparent`
-              : 'bg-slate-900 text-slate-600 border-white/5'
-        }
-      `}>
-        {isMilestone ? `★ ${reward.level}` : reward.level}
-      </div>
-    </div>
-  )
-}
-
-// ============================================================
-// TRACK CONNECTOR — luminoso entre cards
-// ============================================================
-
-function TrackConnector({ isUnlocked, gradient, glowColor }: { isUnlocked: boolean; gradient: string; glowColor: string }) {
-  return (
-    <div className="flex-shrink-0 self-center" style={{ width: 16, marginTop: 18 }}>
-      {isUnlocked ? (
-        <div
-          className={`h-1 w-full rounded-full bg-gradient-to-r ${gradient}`}
-          style={{ boxShadow: `0 0 6px ${glowColor}` }}
-        />
-      ) : (
-        <div className="h-0.5 w-full bg-slate-800 rounded-full" />
+        </div>
+      )}
+      
+      {/* ── INDICADOR DE SEU NÍVEL ── */}
+      {isMyLevel && (
+        <div className="absolute bottom-[20px] flex justify-center w-full z-30">
+          <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[12px] border-l-transparent border-r-transparent border-b-white animate-bounce" />
+        </div>
       )}
     </div>
   )
@@ -477,127 +390,85 @@ export default function BattlePass() {
         </div>
       </motion.div>
 
-      {/* ── TRILHA DE RECOMPENSAS ── */}
-      <div>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="text-lg font-black text-white flex items-center gap-2">
-            <Gift className="w-4 h-4 text-amber-400" />
-            Trilha de Recompensas
-            {unclaimedCount > 0 && (
-              <motion.span animate={{ scale: [1, 1.06, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}
-                className="text-xs bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded-full">
-                {unclaimedCount} disponível!
-              </motion.span>
-            )}
-          </h2>
-          <div className="flex items-center gap-2">
-            {playersProgress.length > 0 && (
-              <span className="text-[10px] text-slate-500 hidden sm:flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 inline-block" />
-                Avatares = posição dos jogadores
-              </span>
-            )}
-            <button onClick={() => scrollTrack('left')} className="w-7 h-7 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center hover:bg-slate-700 transition-colors">
-              <ChevronLeft className="w-3.5 h-3.5 text-white" />
-            </button>
-            <button onClick={() => scrollTrack('right')} className="w-7 h-7 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center hover:bg-slate-700 transition-colors">
-              <ChevronRight className="w-3.5 h-3.5 text-white" />
-            </button>
+      {/* ── BRAWL STARS STYLE TROPHY ROAD TRACK ── */}
+      <div className="relative overflow-hidden rounded-[2rem] border-4 border-[#1e3a8a] bg-[#0f172a] shadow-2xl" style={{ height: 420 }}>
+        
+        {/* Fundo com Padrão Divertido (Estilo Brawl Stars) */}
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent" />
+
+        {/* HUD Superior sobre a Track */}
+        <div className="absolute top-4 left-6 right-6 flex justify-between items-center z-20 pointer-events-none">
+          <div className="bg-slate-900/80 backdrop-blur border-2 border-slate-700 p-2 sm:p-3 rounded-2xl flex items-center gap-3 shadow-xl pointer-events-auto">
+            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-inner">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider leading-none mb-1">XP Total Acumulado</p>
+              <p className="text-xl sm:text-2xl font-black text-white leading-none">{progress?.total_bp_xp?.toLocaleString() || 0}</p>
+            </div>
           </div>
+          
+          {unclaimedCount > 0 && (
+            <motion.button animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}
+              className="bg-emerald-500 text-white font-black px-4 py-2 rounded-xl flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.6)] pointer-events-auto border-2 border-emerald-400">
+              <Gift className="w-5 h-5" /> {unclaimedCount} <span className="hidden sm:inline">Disponíveis!</span>
+            </motion.button>
+          )}
         </div>
 
-        {/* Track container — fundo temático de jogo */}
-        <div className="relative rounded-3xl overflow-hidden border border-white/8" style={{
-          background: 'linear-gradient(180deg, #0a0a1a 0%, #0d0d24 40%, #08081a 100%)',
-          boxShadow: 'inset 0 0 80px rgba(88,28,235,0.08), 0 0 0 1px rgba(255,255,255,0.04)'
-        }}>
-          {/* Estrelas de fundo */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(30)].map((_, i) => (
-              <div key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  width: Math.random() * 2 + 1,
-                  height: Math.random() * 2 + 1,
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  opacity: Math.random() * 0.4 + 0.05,
-                }}
-              />
-            ))}
+        {/* Botões de Navegação Flutuantes */}
+        <button onClick={() => scrollTrack('left')} className="absolute left-2 sm:left-4 top-[60%] -translate-y-1/2 z-30 w-12 h-12 bg-slate-900/80 hover:bg-slate-800 border-2 border-white/20 rounded-full flex items-center justify-center backdrop-blur shadow-2xl transition-all">
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </button>
+        <button onClick={() => scrollTrack('right')} className="absolute right-2 sm:right-4 top-[60%] -translate-y-1/2 z-30 w-12 h-12 bg-slate-900/80 hover:bg-slate-800 border-2 border-white/20 rounded-full flex items-center justify-center backdrop-blur shadow-2xl transition-all">
+          <ChevronRight className="w-6 h-6 text-white" />
+        </button>
+
+        {/* Container Horizontal (Scroll) */}
+        {rewards.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 z-10 relative">
+            <Shield className="w-12 h-12 mb-3 opacity-30" />
+            <p className="font-bold">Nenhuma recompensa configurada.</p>
           </div>
-
-          {/* Linha de trilha estilizada */}
-          <div className="absolute left-0 right-0 pointer-events-none" style={{ top: '55%', transform: 'translateY(-50%)' }}>
-            <div style={{
-              height: 3,
-              background: 'linear-gradient(90deg, transparent 0%, rgba(88,28,235,0.3) 10%, rgba(88,28,235,0.15) 50%, rgba(88,28,235,0.3) 90%, transparent 100%)',
-              boxShadow: '0 0 20px rgba(88,28,235,0.2)',
-            }} />
-          </div>
-
-          {/* Brilho lateral esquerdo */}
-          <div className="absolute left-0 top-0 bottom-0 w-16 pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, #0a0a1a 0%, transparent 100%)' }} />
-          {/* Brilho lateral direito */}
-          <div className="absolute right-0 top-0 bottom-0 w-16 pointer-events-none"
-            style={{ background: 'linear-gradient(-90deg, #0a0a1a 0%, transparent 100%)' }} />
-
-          {rewards.length === 0 ? (
-            <div className="text-center py-16 text-slate-500">
-              <Shield className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Nenhuma recompensa configurada ainda.</p>
+        ) : (
+          <div ref={trackRef} className="absolute inset-0 overflow-x-auto no-scrollbar flex items-center px-[50vw] sm:px-[30vw] pt-10" style={{ scrollSnapType: 'x mandatory' }}>
+            
+            {/* Linha Contínua Fundo (Laranja Escuro) */}
+            <div className="absolute h-8 bg-[#9a3412] left-0 right-0 border-y-2 border-[#7c2d12]" style={{ width: Math.max(2000, rewards.length * 150 + 1000), top: '65%' }} />
+            
+            {/* Linha de Progresso Preenchida (Laranja Brilhante) */}
+            <div className="absolute h-8 bg-[#f59e0b] left-0 shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-1000 border-y-2 border-[#d97706]" 
+                 style={{ width: `calc(50vw + ${currentLevel * 150}px + ${(currentXp / xpPerLevel) * 150}px)`, top: '65%' }}>
+              <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40" />
+              <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
             </div>
-          ) : (
-            <div
-              ref={trackRef}
-              className="flex items-center overflow-x-auto no-scrollbar scroll-smooth px-16 pt-24 pb-8"
-              style={{ scrollSnapType: 'x mandatory', gap: 0, minHeight: 200 }}
-            >
+
+            <div className="flex gap-[10px] relative z-10 h-full">
               {rewards.map((reward, i) => {
                 const isUnlocked  = currentLevel >= reward.level
                 const isClaimed   = claimedIds.has(reward.id)
                 const isMyLevel   = reward.level === currentLevel
-                const isMilestone = reward.level % 5 === 0
                 const playersHere = playersByLevel[reward.level] ?? []
-                const cfg = RARITY_CONFIG[reward.rarity]
-                const nextIsUnlocked = i + 1 < rewards.length && currentLevel >= rewards[i + 1].level
+                const milestoneXP = reward.level * xpPerLevel
 
                 return (
-                  <div
-                    key={reward.id}
-                    data-level={reward.level}
-                    className="flex items-center"
-                    style={{ scrollSnapAlign: 'start' }}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.025, 0.6) }}
-                    >
-                      <RewardCard
-                        reward={reward}
-                        isUnlocked={isUnlocked}
-                        isClaimed={isClaimed}
-                        onClaim={handleClaim}
-                        playersHere={playersHere}
-                        isMyLevel={isMyLevel}
-                        isMilestone={isMilestone}
-                      />
-                    </motion.div>
-                    {i < rewards.length - 1 && (
-                      <TrackConnector
-                        isUnlocked={nextIsUnlocked}
-                        gradient={cfg.gradient}
-                        glowColor={cfg.glowColor}
-                      />
-                    )}
-                  </div>
+                  <motion.div key={reward.id} data-level={reward.level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.5) }}>
+                    <RewardCard
+                      reward={reward}
+                      isUnlocked={isUnlocked}
+                      isClaimed={isClaimed}
+                      onClaim={handleClaim}
+                      playersHere={playersHere}
+                      isMyLevel={isMyLevel}
+                      milestoneXP={milestoneXP}
+                    />
+                  </motion.div>
                 )
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ── RANKING DE JOGADORES ── */}
