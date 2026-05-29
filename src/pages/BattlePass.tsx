@@ -391,11 +391,14 @@ export default function BattlePass() {
       </motion.div>
 
       {/* ── BRAWL STARS STYLE TROPHY ROAD TRACK ── */}
-      <div className="relative overflow-hidden rounded-[2rem] border-4 border-[#1e3a8a] bg-[#0f172a] shadow-2xl" style={{ height: 420 }}>
+      <div className="relative overflow-hidden rounded-[2rem] border-4 border-[#1e3a8a] shadow-2xl" style={{ height: 420 }}>
         
-        {/* Fundo com Padrão Divertido (Estilo Brawl Stars) */}
-        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay" />
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent" />
+        {/* Fundo com Paisagem Voxel */}
+        <div className="absolute inset-0 bg-[url('/bp_bg.png')] bg-cover bg-center" />
+        
+        {/* Overlay para dar contraste aos cards e números */}
+        <div className="absolute inset-0 bg-slate-900/30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-transparent to-slate-950/80" />
 
         {/* HUD Superior sobre a Track */}
         <div className="absolute top-4 left-6 right-6 flex justify-between items-center z-20 pointer-events-none">
