@@ -551,8 +551,8 @@ export default function BattlePass() {
           ) : (
             <div
               ref={trackRef}
-              className="flex items-center overflow-x-auto no-scrollbar scroll-smooth px-16 pt-32 pb-8"
-              style={{ scrollSnapType: 'x mandatory', gap: 0, minHeight: 240 }}
+              className="flex items-center overflow-x-auto no-scrollbar scroll-smooth px-16 pt-24 pb-8"
+              style={{ scrollSnapType: 'x mandatory', gap: 0, minHeight: 200 }}
             >
               {rewards.map((reward, i) => {
                 const isUnlocked  = currentLevel >= reward.level
