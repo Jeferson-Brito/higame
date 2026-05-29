@@ -124,7 +124,7 @@ export default function Profile() {
         supabase.from('rankings').select('*').eq('employee_id', targetId).eq('season_id', seasonData.id).single(),
         supabase.from('employee_results').select('*, kpi:kpi_definitions(*)').eq('employee_id', targetId).eq('season_id', seasonData.id),
         supabase.from('employee_badges').select('id, unlocked_at, badge:badges(id, name, description, icon, rarity)').eq('employee_id', targetId).order('unlocked_at', { ascending: false }),
-        isOwner ? supabase.from('employee_purchases').select('id, item:store_items(*)').eq('employee_id', targetId).eq('status', 'fulfilled') : Promise.resolve({ data: [] })
+        isOwner ? supabase.from('employee_purchases').select('id, status, item:store_items(*)').eq('employee_id', targetId).neq('status', 'rejected') : Promise.resolve({ data: [] })
       ])
 
       setRanking(rankData.data as Ranking | null)
