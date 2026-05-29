@@ -35,13 +35,26 @@ CREATE OR REPLACE FUNCTION process_store_purchase()
 RETURNS TRIGGER AS $$
 DECLARE
   v_item_price INTEGER;
+  v_item_limit INTEGER;
   v_item_type TEXT;
   v_current_balance INTEGER;
+  v_purchase_count INTEGER;
 BEGIN
   -- 1. Obter informações do item
-  SELECT price_coins, type INTO v_item_price, v_item_type
+  SELECT price_coins, purchase_limit, type INTO v_item_price, v_item_limit, v_item_type
   FROM store_items
   WHERE id = NEW.item_id;
+
+  -- Checa limite de compra
+  IF v_item_limit IS NOT NULL AND v_item_limit > 0 THEN
+    SELECT COUNT(*) INTO v_purchase_count 
+    FROM employee_purchases 
+    WHERE employee_id = NEW.employee_id AND item_id = NEW.item_id;
+    
+    IF v_purchase_count >= v_item_limit THEN
+      RAISE EXCEPTION 'Limite de compras atingido para este item.';
+    END IF;
+  END IF;
 
   -- 2. Verificar o saldo do usuário
   SELECT coins_balance INTO v_current_balance
