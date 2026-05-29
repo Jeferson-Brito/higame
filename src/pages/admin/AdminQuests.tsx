@@ -12,6 +12,7 @@ interface Quest {
   frequency: string
   xp_reward: number
   coin_reward: number
+  bp_xp_reward: number
   target_value: number
   is_active: boolean
 }
@@ -81,7 +82,7 @@ export default function AdminQuests() {
     setDescription(quest.description || '')
     setXp(quest.xp_reward)
     setCoins(quest.coin_reward)
-    setBpXp((quest as any).bp_xp_reward ?? 0)
+    setBpXp(quest.bp_xp_reward ?? 0)
     setTarget(quest.target_value)
     setFrequency(quest.frequency)
     window.scrollTo({ top: 0, behavior: 'smooth' })
