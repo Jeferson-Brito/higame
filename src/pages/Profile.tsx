@@ -285,6 +285,7 @@ export default function Profile() {
         <div className="mt-6">
           <XPProgressBar totalXp={totalXp} xpPerLevel={xpPerLevel} />
         </div>
+        </div>
       </ProfileBanner>
 
       {/* TABS DE NAVEGAÇÃO */}
