@@ -105,9 +105,9 @@ export default function AdminCoins() {
       // 3. Notificação para o colaborador
       await supabase.from('notifications').insert({
         profile_id: selectedEmployee.id,
-        title: delta > 0 ? `+${delta} HiCoins recebidos!` : `${delta} HiCoins removidos`,
+        title: delta > 0 ? `+${delta} HiCoins recebidos!` : `${Math.abs(delta)} HiCoins removidos`,
         message: `${delta > 0 ? 'Você ganhou' : 'Foram removidos'} ${Math.abs(delta)} HC. Motivo: ${reason}`,
-        type: delta > 0 ? 'coins_received' : 'coins_removed',
+        type: delta > 0 ? 'reward' : 'system',
       })
 
       toast.success(`${delta > 0 ? '+' : ''}${delta} HC aplicado a ${selectedEmployee.full_name}!`)
