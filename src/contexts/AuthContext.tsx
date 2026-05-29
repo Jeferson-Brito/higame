@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity)')
+        .select('*, active_title:store_items!fk_active_title(name), active_frame:store_items!fk_active_frame(rarity, asset_url), active_banner:store_items!fk_active_banner(asset_url)')
         .eq('id', userId)
         .maybeSingle()
 
@@ -86,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...data,
         active_title: data?.active_title ? (Array.isArray(data.active_title) ? data.active_title[0] : data.active_title) : null,
         active_frame: data?.active_frame ? (Array.isArray(data.active_frame) ? data.active_frame[0] : data.active_frame) : null,
+        active_banner: data?.active_banner ? (Array.isArray(data.active_banner) ? data.active_banner[0] : data.active_banner) : null,
       } as Profile
 
       // --- Lógica de Daily Streak ---

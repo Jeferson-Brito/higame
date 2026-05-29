@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom'
 import type { Season, Ranking, AppSettings, BattlePassSeason, BattlePassProgress, BattlePassReward } from '@/types'
 import { Flame, Target, Trophy, Star, ChevronRight, CheckCircle2, Users, Shield, Zap, Gift, Lock } from 'lucide-react'
 import { AvatarFrame } from '@/components/ui/AvatarFrame'
+import { ProfileBanner } from '@/components/ui/ProfileBanner'
 import { StreakCard } from '@/components/StreakCard'
 import { SocialFeed } from '@/components/SocialFeed'
 import { PremiumToastContainer } from '@/components/PremiumToast'
@@ -26,6 +27,7 @@ interface EmployeeQuest {
     description: string
     xp_reward: number
     coin_reward: number
+    bp_xp_reward: number
     target_value: number
     frequency: string
     requires_proof: boolean
@@ -101,7 +103,7 @@ export default function Dashboard() {
         .from('employee_quests')
         .select(`
           id, progress, completed, validation_status,
-          quest:quests(id, name, description, xp_reward, coin_reward, target_value, frequency, requires_proof)
+          quest:quests(id, name, description, xp_reward, coin_reward, bp_xp_reward, target_value, frequency, requires_proof)
         `)
         .eq('employee_id', profileId)
         .order('completed', { ascending: true }) // não completadas primeiro
@@ -251,11 +253,19 @@ export default function Dashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-[2rem] bg-slate-900 border border-white/10 shadow-2xl"
       >
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-higame-purple/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-higame-neon/20 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4" />
+        <ProfileBanner
+          bannerUrl={profile?.active_banner?.asset_url}
+          className="relative overflow-hidden rounded-[2rem] shadow-2xl border border-white/10"
+        >
+          {/* Fallback dark background if no banner */}
+          {!profile?.active_banner?.asset_url && (
+            <div className="absolute inset-0 bg-slate-900" />
+          )}
+          
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-higame-purple/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-higame-neon/20 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
         <div className="relative p-8 sm:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start z-10">
           
@@ -266,6 +276,7 @@ export default function Dashboard() {
               fullName={profile?.full_name || 'Usuário'}
               size="xl"
               frameRarity={profile?.active_frame?.rarity}
+              frameUrl={profile?.active_frame?.asset_url}
               className="relative z-10"
             />
             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 bg-slate-950 border-2 border-higame-neon text-white px-4 py-1 rounded-full font-outfit font-black text-lg shadow-glow-neon flex items-center gap-1">
@@ -321,6 +332,7 @@ export default function Dashboard() {
             <p className="text-xs text-slate-400 mt-2">Temporada Ativa</p>
           </div>
         </div>
+        </ProfileBanner>
       </motion.div>
 
       {/* 2. BATTLE PASS CARD */}
@@ -430,6 +442,11 @@ export default function Dashboard() {
                     {eq.quest.coin_reward > 0 && (
                       <span className="text-[10px] font-bold text-amber-400 bg-amber-400/20 px-2 py-1 rounded-md whitespace-nowrap">
                         +{eq.quest.coin_reward} HC
+                      </span>
+                    )}
+                    {eq.quest.bp_xp_reward > 0 && (
+                      <span className="text-[10px] font-bold text-purple-400 bg-purple-400/20 px-2 py-1 rounded-md whitespace-nowrap">
+                        +{eq.quest.bp_xp_reward} BP XP
                       </span>
                     )}
                   </div>
