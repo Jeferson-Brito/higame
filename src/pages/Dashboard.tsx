@@ -19,6 +19,7 @@ interface EmployeeQuest {
   id: string
   progress: number
   completed: boolean
+  validation_status: string
   quest: {
     id: string
     name: string
@@ -27,6 +28,7 @@ interface EmployeeQuest {
     coin_reward: number
     target_value: number
     frequency: string
+    requires_proof: boolean
   }
 }
 
@@ -98,8 +100,8 @@ export default function Dashboard() {
       const { data: questsData } = await supabase
         .from('employee_quests')
         .select(`
-          id, progress, completed,
-          quest:quests(id, name, description, xp_reward, coin_reward, target_value, frequency)
+          id, progress, completed, validation_status,
+          quest:quests(id, name, description, xp_reward, coin_reward, target_value, frequency, requires_proof)
         `)
         .eq('employee_id', profileId)
         .order('completed', { ascending: true }) // não completadas primeiro
@@ -180,6 +182,49 @@ export default function Dashboard() {
   useEffect(() => {
     void fetchAll()
   }, [fetchAll])
+
+  // File Upload Handling
+  const handleUploadProof = async (eqId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !profileId) return
+    
+    // Validate file size and type (basic validation)
+    if (file.size > 5 * 1024 * 1024) {
+      return toast.error('O arquivo deve ter no máximo 5MB')
+    }
+
+    const toastId = toast.loading('Enviando comprovante...')
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${profileId}_${eqId}_${Date.now()}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('quest_proofs')
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage
+        .from('quest_proofs')
+        .getPublicUrl(fileName)
+
+      const { error: updError } = await supabase
+        .from('employee_quests')
+        .update({ 
+          proof_url: publicUrlData.publicUrl,
+          validation_status: 'pending'
+        })
+        .eq('id', eqId)
+
+      if (updError) throw updError
+
+      toast.success('Comprovante enviado com sucesso!', { id: toastId })
+      void fetchAll()
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Erro ao enviar o comprovante', { id: toastId })
+    }
+  }
 
   if (loading) {
     return (
@@ -398,12 +443,32 @@ export default function Dashboard() {
                     <span>Progresso</span>
                     <span>{eq.progress} / {eq.quest.target_value}</span>
                   </div>
-                  <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden mb-3">
                     <div 
                       className={`h-full ${eq.completed ? 'bg-higame-success' : 'bg-higame-neon'}`} 
                       style={{ width: `${Math.min(100, (eq.progress / eq.quest.target_value) * 100)}%` }} 
                     />
                   </div>
+
+                  {eq.quest.requires_proof && !eq.completed && (
+                    <div className="mt-3">
+                      {eq.validation_status === 'pending' ? (
+                        <div className="text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-2 rounded-lg text-center flex items-center justify-center gap-2">
+                          <Shield className="w-4 h-4" /> Comprovante em Análise
+                        </div>
+                      ) : eq.validation_status === 'rejected' ? (
+                        <label className="text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors cursor-pointer px-3 py-2 rounded-lg text-center flex items-center justify-center gap-2 w-full">
+                          Reenviar Comprovante
+                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleUploadProof(eq.id, e)} />
+                        </label>
+                      ) : (
+                        <label className="text-xs font-bold text-white bg-slate-700 hover:bg-slate-600 border border-white/10 transition-colors cursor-pointer px-3 py-2 rounded-lg text-center flex items-center justify-center gap-2 w-full">
+                          Anexar Comprovante
+                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleUploadProof(eq.id, e)} />
+                        </label>
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}

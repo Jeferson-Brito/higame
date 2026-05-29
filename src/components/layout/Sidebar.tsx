@@ -29,6 +29,7 @@ const ADMIN_NAV = [
   { icon: Users,           label: 'Colaboradores', to: '/admin/employees' },
   { icon: Users2,          label: 'Equipes',       to: '/admin/teams' },
   { icon: Target,          label: 'Missões',       to: '/admin/quests' },
+  { icon: ClipboardList,   label: 'Aprovações',    to: '/admin/approvals' },
   { icon: Award,           label: 'Medalhas',      to: '/admin/badges' },
   { icon: Calendar,        label: 'Temporadas',    to: '/admin/seasons' },
   { icon: BarChart3,       label: 'Metas (KPIs)',  to: '/admin/kpis' },

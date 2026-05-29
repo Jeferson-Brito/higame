@@ -31,6 +31,7 @@ import AdminBadges from '@/pages/admin/AdminBadges'
 import AdminTeams from '@/pages/admin/AdminTeams'
 import AdminCoins from '@/pages/admin/AdminCoins'
 import AdminBattlePass from '@/pages/admin/AdminBattlePass'
+import AdminApprovals from '@/pages/admin/AdminApprovals'
 
 export default function App() {
   return (
@@ -77,6 +78,7 @@ export default function App() {
             <Route path="teams" element={<AdminTeams />} />
             <Route path="coins" element={<AdminCoins />} />
             <Route path="battle-pass" element={<AdminBattlePass />} />
+            <Route path="approvals" element={<AdminApprovals />} />
           </Route>
 
           {/* Fallback */}
