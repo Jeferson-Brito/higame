@@ -126,7 +126,7 @@ function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyL
               ? 'bg-[#38bdf8] border-[#0284c7] shadow-[0_10px_0_#0284c7]' 
               : isClaimed 
                 ? 'bg-[#0f766e] border-[#042f2e]' 
-                : 'bg-[#1e293b] border-[#0f172a]'
+                : 'bg-[#1e293b]/70 border-[#0f172a]/70 backdrop-blur-sm'
             }`}
           onClick={() => isUnlocked && !isClaimed && onClaim(reward)}
         >
@@ -143,21 +143,27 @@ function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyL
           )}
 
           {/* Ícone */}
-          <div className="text-4xl mb-2 relative z-10">
+          <div className="text-4xl mb-6 relative z-10 flex items-center justify-center">
             {reward.icon ? (
               <span>{reward.icon}</span>
             ) : (
-              <Icon className="w-10 h-10 text-white" />
+              <Icon className={`w-10 h-10 ${
+                reward.reward_type === 'coins' ? 'text-amber-400' :
+                reward.reward_type === 'badge' ? 'text-purple-400' :
+                reward.reward_type === 'store_item' ? 'text-emerald-400' :
+                'text-rose-400'
+              }`} />
             )}
           </div>
           
           {/* Faixa inferior com nome */}
-          <div className={`w-full text-center py-1 absolute bottom-0 left-0 right-0 border-t-2 rounded-b-lg overflow-hidden
-            ${isUnlocked && !isClaimed ? 'bg-[#0ea5e9] border-[#0284c7]' : isClaimed ? 'bg-[#0d9488] border-[#115e59]' : 'bg-[#334155] border-[#1e293b]'}`}>
-            <span className="text-[11px] font-black text-white px-1 block truncate leading-tight shadow-sm">{reward.name}</span>
+          <div className={`w-full text-center py-1.5 absolute bottom-0 left-0 right-0 border-t-2 rounded-b-lg overflow-hidden flex flex-col justify-center
+            ${isUnlocked && !isClaimed ? 'bg-[#0ea5e9] border-[#0284c7]' : isClaimed ? 'bg-[#0d9488] border-[#115e59]' : 'bg-[#334155]/90 border-[#1e293b]'}`}>
+            <span className="text-[11px] font-black text-white px-1 block truncate leading-none shadow-sm mb-0.5">{reward.name}</span>
             {reward.reward_type === 'coins' && reward.reward_value?.amount && (
-              <span className="text-[10px] text-amber-200 font-black flex items-center justify-center gap-1">
-                <Coins className="w-3 h-3" /> {reward.reward_value.amount}
+              <span className="text-[10px] text-amber-200 font-black flex items-center justify-center gap-1 leading-none">
+                <Coins className="w-3 h-3" />
+                <span className="mt-[1px]">{reward.reward_value.amount}</span>
               </span>
             )}
           </div>
