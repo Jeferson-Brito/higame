@@ -21,6 +21,7 @@ interface EmployeeQuest {
 interface TopPlayer {
   employee_id: string
   total_xp: number
+  total_trophies: number
   rank_position: number
   profile: {
     id: string
@@ -74,27 +75,37 @@ export default function Dashboard() {
         setRanking(result.data as Ranking | null)
 
         // Fetch ALL employees and their rankings
-        const [profilesRes, rankingsRes] = await Promise.all([
+        const [profilesRes, rankingsRes, bpSeasonRes] = await Promise.all([
           supabase.from('profiles').select('id, full_name, avatar_url').eq('role', 'employee'),
-          supabase.from('rankings').select('employee_id, total_xp, rank_position').eq('season_id', currentSeason.id)
+          supabase.from('rankings').select('employee_id, total_xp, rank_position').eq('season_id', currentSeason.id),
+          supabase.from('battle_pass_seasons').select('id').eq('is_active', true).is('deleted_at', null).maybeSingle()
         ])
 
         const allEmps = profilesRes.data ?? []
         const seasonRanks = rankingsRes.data ?? []
+        const activeBpId = bpSeasonRes.data?.id
+
+        let bpProgresses: any[] = []
+        if (activeBpId) {
+          const progRes = await supabase.from('battle_pass_progress').select('employee_id, total_bp_xp').eq('season_id', activeBpId)
+          bpProgresses = progRes.data ?? []
+        }
 
         // Map and merge
         const mappedPlayers: TopPlayer[] = allEmps.map((emp: any) => {
           const r = seasonRanks.find((rank: any) => rank.employee_id === emp.id)
+          const bp = bpProgresses.find((p: any) => p.employee_id === emp.id)
           return {
             employee_id: emp.id,
             total_xp: r ? r.total_xp : 0,
+            total_trophies: bp ? bp.total_bp_xp : 0,
             rank_position: r ? r.rank_position : 999,
             profile: emp
           }
         })
 
-        // Sort by total_xp desc
-        mappedPlayers.sort((a, b) => b.total_xp - a.total_xp)
+        // Sort by total_trophies desc
+        mappedPlayers.sort((a, b) => b.total_trophies - a.total_trophies)
 
         setAllPlayers(mappedPlayers)
         setTopPlayers(mappedPlayers.slice(0, 3))
@@ -167,6 +178,7 @@ export default function Dashboard() {
   }
 
   const totalXp = ranking?.total_xp ?? 0
+  const totalTrophies = bpProgress?.total_bp_xp ?? 0
   const xpPerLevel = settings?.xp_per_level ?? 1000
   const level = calculateLevel(totalXp, xpPerLevel)
   const coins = profile?.coins_balance ?? 0
@@ -236,7 +248,7 @@ export default function Dashboard() {
           <div className="pr-4">
             <h3 className="text-lg sm:text-xl font-black tracking-tight">{profile?.full_name?.split(' ')[0]}</h3>
             <div className="flex items-center gap-1.5 text-amber-400 text-sm font-black">
-              <Trophy className="w-4 h-4" /> {totalXp.toLocaleString()}
+              <Trophy className="w-4 h-4" /> {totalTrophies.toLocaleString()}
             </div>
           </div>
         </div>
@@ -246,7 +258,7 @@ export default function Dashboard() {
           {/* Trophies */}
           <div className="hidden sm:flex bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 items-center gap-2 shadow-lg">
             <Trophy className="w-5 h-5 text-amber-500 fill-amber-500" />
-            <span className="font-black text-base">{totalXp.toLocaleString()}</span>
+            <span className="font-black text-base">{totalTrophies.toLocaleString()}</span>
           </div>
           {/* Coins (HC) */}
           <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
@@ -295,7 +307,9 @@ export default function Dashboard() {
             {/* Tooltip */}
             <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-slate-900 border border-white/10 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
               <p className="text-xs font-bold text-white">{player.profile.full_name}</p>
-              <p className="text-[10px] text-amber-400 font-bold">{player.total_xp} XP</p>
+              <p className="text-[10px] text-amber-400 font-bold flex items-center gap-1">
+                <Trophy className="w-3 h-3" /> {player.total_trophies.toLocaleString()}
+              </p>
             </div>
           </div>
         ))}
@@ -338,7 +352,7 @@ export default function Dashboard() {
                  </div>
                  <div className="bg-slate-900 border border-slate-300 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap flex flex-col items-center">
                     <span>{topPlayers[1].profile.full_name.split(' ')[0]}</span>
-                    <span className="text-[9px] text-amber-400 flex items-center gap-1"><Trophy className="w-2.5 h-2.5" /> {topPlayers[1].total_xp.toLocaleString()}</span>
+                    <span className="text-[9px] text-amber-400 flex items-center gap-1"><Trophy className="w-2.5 h-2.5" /> {topPlayers[1].total_trophies.toLocaleString()}</span>
                   </div>
                </div>
              )}
@@ -357,7 +371,7 @@ export default function Dashboard() {
                  </div>
                  <div className="bg-amber-500 border border-amber-200 text-slate-900 text-xs md:text-sm font-black px-3 py-1 rounded-full -mt-4 z-30 shadow-lg whitespace-nowrap flex flex-col items-center">
                     <span>{topPlayers[0].profile.full_name.split(' ')[0]}</span>
-                    <span className="text-[10px] font-black flex items-center gap-1"><Trophy className="w-3 h-3 text-slate-800" /> {topPlayers[0].total_xp.toLocaleString()}</span>
+                    <span className="text-[10px] font-black flex items-center gap-1"><Trophy className="w-3 h-3 text-slate-800" /> {topPlayers[0].total_trophies.toLocaleString()}</span>
                   </div>
                </div>
              )}
@@ -375,7 +389,7 @@ export default function Dashboard() {
                  </div>
                  <div className="bg-slate-900 border border-amber-700 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap flex flex-col items-center">
                     <span>{topPlayers[2].profile.full_name.split(' ')[0]}</span>
-                    <span className="text-[9px] text-amber-400 flex items-center gap-1"><Trophy className="w-2.5 h-2.5" /> {topPlayers[2].total_xp.toLocaleString()}</span>
+                    <span className="text-[9px] text-amber-400 flex items-center gap-1"><Trophy className="w-2.5 h-2.5" /> {topPlayers[2].total_trophies.toLocaleString()}</span>
                   </div>
                </div>
              )}
