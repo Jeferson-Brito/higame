@@ -469,8 +469,12 @@ export default function BattlePass() {
                      width: `${Math.max(0, totalXp / xpPerLevel * 150)}px`, 
                      top: '65%' 
                    }}>
-                <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40 rounded-r-full" />
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none rounded-l-full" />
+                {totalXp > 0 && (
+                  <>
+                    <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40 rounded-r-full" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none rounded-l-full" />
+                  </>
+                )}
 
                 {/* Marcador do Jogador (Avatar + Troféus) */}
                 <div className="absolute top-10 right-0 translate-x-1/2 flex flex-col items-center gap-1 z-20 pointer-events-none">
