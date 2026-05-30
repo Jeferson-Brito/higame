@@ -125,8 +125,8 @@ function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyL
             ${isUnlocked && !isClaimed 
               ? 'bg-[#38bdf8] border-[#0284c7] shadow-[0_10px_0_#0284c7]' 
               : isClaimed 
-                ? 'bg-[#0f766e] border-[#042f2e] opacity-90' 
-                : 'bg-[#1e293b] border-[#0f172a] opacity-70'
+                ? 'bg-[#0f766e] border-[#042f2e]' 
+                : 'bg-[#1e293b] border-[#0f172a]'
             }`}
           onClick={() => isUnlocked && !isClaimed && onClaim(reward)}
         >
@@ -144,7 +144,11 @@ function RewardCard({ reward, isUnlocked, isClaimed, onClaim, playersHere, isMyL
 
           {/* Ícone */}
           <div className="text-4xl mb-2 relative z-10">
-            {reward.icon || <Icon className={`w-10 h-10 ${isUnlocked ? 'text-white' : 'text-slate-500'}`} />}
+            {reward.icon ? (
+              <span>{reward.icon}</span>
+            ) : (
+              <Icon className="w-10 h-10 text-white" />
+            )}
           </div>
           
           {/* Faixa inferior com nome */}
