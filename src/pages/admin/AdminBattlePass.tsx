@@ -36,14 +36,15 @@ interface ProgressWithProfile extends BattlePassProgress {
 // ============================================================
 
 function RewardFormModal({
-  seasonId, reward, onClose, onSaved,
+  seasonId, reward, xpPerLevel, onClose, onSaved,
 }: {
   seasonId: string
   reward: BattlePassReward | null
+  xpPerLevel: number
   onClose: () => void
   onSaved: () => void
 }) {
-  const [level, setLevel] = useState(reward?.level ?? 1)
+  const [trophies, setTrophies] = useState(reward ? reward.level * xpPerLevel : xpPerLevel)
   const [name, setName] = useState(reward?.name ?? '')
   const [desc, setDesc] = useState(reward?.description ?? '')
   const [icon, setIcon] = useState(reward?.icon ?? '')
@@ -52,13 +53,22 @@ function RewardFormModal({
   const [rewardValue, setRewardValue] = useState(reward?.reward_value ?? {})
   const [saving, setSaving] = useState(false)
 
+  // Opções para dropdowns
+  const [badges, setBadges] = useState<{id: string, name: string}[]>([])
+  const [storeItems, setStoreItems] = useState<{id: string, name: string}[]>([])
+
+  useEffect(() => {
+    supabase.from('badges').select('id, name').order('name').then(({data}) => setBadges(data || []))
+    supabase.from('store_items').select('id, name').order('name').then(({data}) => setStoreItems(data || []))
+  }, [])
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     try {
       const payload = {
         season_id: seasonId,
-        level,
+        level: Math.max(1, Math.round(trophies / xpPerLevel)),
         name,
         description: desc || null,
         icon: icon || null,
@@ -103,25 +113,29 @@ function RewardFormModal({
       case 'badge':
         return (
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">ID da Medalha (UUID)</label>
-            <input
-              type="text"
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Selecione a Medalha</label>
+            <select
               value={(rewardValue as any).badge_id ?? ''}
               onChange={e => setRewardValue({ badge_id: e.target.value })}
-              className="input-field w-full font-mono text-xs" placeholder="uuid da badge..."
-            />
+              className="input-field w-full"
+            >
+              <option value="">-- Selecione --</option>
+              {badges.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
           </div>
         )
       case 'store_item':
         return (
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">ID do Item da Loja (UUID)</label>
-            <input
-              type="text"
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Selecione o Item da Loja</label>
+            <select
               value={(rewardValue as any).item_id ?? ''}
               onChange={e => setRewardValue({ item_id: e.target.value })}
-              className="input-field w-full font-mono text-xs" placeholder="uuid do item..."
-            />
+              className="input-field w-full"
+            >
+              <option value="">-- Selecione --</option>
+              {storeItems.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
+            </select>
           </div>
         )
       case 'custom':
@@ -159,14 +173,22 @@ function RewardFormModal({
         <form onSubmit={handleSave} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nível</label>
-              <input type="number" required min={1} value={level} onChange={e => setLevel(Number(e.target.value))}
-                className="input-field w-full" />
+              <label className="block text-xs font-bold text-amber-500 uppercase tracking-wider mb-2">Troféus Necessários</label>
+              <input type="number" required min={xpPerLevel} step={xpPerLevel} value={trophies} onChange={e => setTrophies(Number(e.target.value))}
+                className="input-field w-full font-bold text-amber-400" />
+              <p className="text-[10px] text-slate-500 mt-1">Equivale ao Nível {Math.max(1, Math.round(trophies / xpPerLevel))}</p>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ícone (emoji)</label>
-              <input type="text" value={icon} onChange={e => setIcon(e.target.value)}
-                className="input-field w-full text-2xl" placeholder="🎁" />
+              <div className="flex gap-2">
+                <input type="text" value={icon} onChange={e => setIcon(e.target.value)}
+                  className="input-field w-20 text-center text-xl" placeholder="🎁" />
+                <div className="flex-1 flex flex-wrap gap-1 content-start">
+                  {['🎁','💎','👑','👕','🌟','💰','🏆','📦','🎫','🪙'].map(emj => (
+                    <button key={emj} type="button" onClick={() => setIcon(emj)} className="p-1.5 hover:bg-white/10 rounded text-lg transition-colors">{emj}</button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -463,7 +485,7 @@ export default function AdminBattlePass() {
                     className="input-field w-full" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">BP XP por Nível</label>
+                  <label className="block text-xs font-bold text-amber-500 uppercase tracking-wider mb-2">Troféus por Nível</label>
                   <input required type="number" min={1} value={seasonForm.xp_per_level} onChange={e => setSeasonForm(p => ({ ...p, xp_per_level: Number(e.target.value) }))}
                     className="input-field w-full" />
                 </div>
@@ -496,7 +518,7 @@ export default function AdminBattlePass() {
                     )}
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    {s.max_level} níveis · {s.xp_per_level} BP XP/nível ·{' '}
+                    {s.max_level} níveis · {s.xp_per_level} Troféus/nível ·{' '}
                     {new Date(s.start_date).toLocaleDateString()} – {new Date(s.end_date).toLocaleDateString()}
                   </p>
                 </div>
@@ -539,6 +561,7 @@ export default function AdminBattlePass() {
             <RewardFormModal
               seasonId={selectedSeasonId}
               reward={rewardModal.reward}
+              xpPerLevel={selectedSeason?.xp_per_level || 1000}
               onClose={() => setRewardModal({ open: false, reward: null })}
               onSaved={() => fetchRewards(selectedSeasonId)}
             />
