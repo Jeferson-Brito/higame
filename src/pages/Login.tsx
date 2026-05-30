@@ -171,7 +171,7 @@ export default function Login() {
                   initial={{ y: -100, opacity: 0, rotateY: 0 }}
                   animate={{ 
                     y: coinPhase === 'falling' ? -20 : 60, 
-                    opacity: coinPhase === 'inserted' ? 0 : 1,
+                    opacity: coinPhase === 'falling' ? 1 : 0,
                     rotateY: coinPhase === 'falling' ? 360 : 0
                   }}
                   transition={{ duration: 0.8, type: 'spring', bounce: 0.5 }}
