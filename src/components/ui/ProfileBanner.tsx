@@ -50,8 +50,8 @@ export function ProfileBanner({ bannerUrl, height = 160, className = '', childre
   const banner = bannerUrl ? BANNER_STYLES[bannerUrl] : null
 
   const style: React.CSSProperties = banner
-    ? { background: banner.bg, height }
-    : { background: 'linear-gradient(135deg, #12121F 0%, #1E1E35 50%, #12121F 100%)', height }
+    ? { background: banner.bg, minHeight: height }
+    : { background: 'linear-gradient(135deg, #12121F 0%, #1E1E35 50%, #12121F 100%)', minHeight: height }
 
   return (
     <div
