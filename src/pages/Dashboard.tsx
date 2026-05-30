@@ -4,78 +4,51 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getAppSettings } from '@/lib/ranking'
 import { calculateLevel } from '@/lib/utils'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Season, Ranking, AppSettings, BattlePassSeason, BattlePassProgress, BattlePassReward } from '@/types'
-import { Flame, Target, Trophy, Star, ChevronRight, CheckCircle2, Users, Shield, Zap, Gift, Lock } from 'lucide-react'
-import { AvatarFrame } from '@/components/ui/AvatarFrame'
-import { ProfileBanner } from '@/components/ui/ProfileBanner'
-import { StreakCard } from '@/components/StreakCard'
-import { SocialFeed } from '@/components/SocialFeed'
+import { Trophy, Star, Shield, Target, Play, ChevronRight, Menu, Users, ShoppingCart, Newspaper, LogOut } from 'lucide-react'
 import { PremiumToastContainer } from '@/components/PremiumToast'
 import { usePremiumToasts } from '@/hooks/usePremiumToasts'
-import toast from 'react-hot-toast'
 
 // Tipos para os retornos do DB
 interface EmployeeQuest {
   id: string
   progress: number
   completed: boolean
-  validation_status: string
-  quest: {
-    id: string
-    name: string
-    description: string
-    xp_reward: number
-    coin_reward: number
-    bp_xp_reward: number
-    target_value: number
-    frequency: string
-    requires_proof: boolean
-  }
+  quest: { name: string; target_value: number }
 }
 
-interface EmployeeBadge {
-  id: string
-  unlocked_at: string
-  badge: {
+interface TopPlayer {
+  employee_id: string
+  total_xp: number
+  rank_position: number
+  profile: {
     id: string
-    name: string
-    icon: string
-    rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic'
+    full_name: string
+    avatar_url: string | null
   }
-}
-
-const RARITY_COLORS: Record<string, string> = {
-  common: 'from-slate-400 to-slate-600 border-slate-400/30 text-slate-300',
-  rare: 'from-blue-400 to-blue-600 border-blue-400/30 text-blue-300 shadow-glow-neon',
-  epic: 'from-purple-400 to-purple-600 border-purple-400/30 text-purple-300 shadow-glow-purple',
-  legendary: 'from-amber-400 to-amber-600 border-amber-400/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.4)]',
-  mythic: 'from-red-500 to-rose-700 border-red-500/40 text-red-300 shadow-[0_0_20px_rgba(239,68,68,0.6)]',
 }
 
 export default function Dashboard() {
-  const { profile } = useAuth()
+  const { profile, signOut } = useAuth()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [ranking, setRanking] = useState<Ranking | null>(null)
   const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [ranking, setRanking] = useState<Ranking | null>(null)
   const prevLevelRef = useRef<number | null>(null)
   const { toasts, dismissToast, showLevelUp } = usePremiumToasts()
   
   // Real data state
-  const [quests, setQuests] = useState<EmployeeQuest[]>([])
-  const [badges, setBadges] = useState<EmployeeBadge[]>([])
+  const [season, setSeason] = useState<Season | null>(null)
+  const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([])
+  const [firstQuest, setFirstQuest] = useState<EmployeeQuest | null>(null)
   const [bpSeason, setBpSeason] = useState<BattlePassSeason | null>(null)
   const [bpProgress, setBpProgress] = useState<BattlePassProgress | null>(null)
-  const [bpNextReward, setBpNextReward] = useState<BattlePassReward | null>(null)
   
   const profileId = profile?.id
 
   const fetchAll = useCallback(async () => {
-    if (!profileId) {
-      setLoading(false)
-      return
-    }
-
+    if (!profileId) return
     setLoading(true)
     try {
       const [settingsData, seasonData] = await Promise.all([
@@ -84,57 +57,55 @@ export default function Dashboard() {
       ])
       
       setSettings(settingsData)
-      const season = seasonData.data as Season | null
+      const currentSeason = seasonData.data as Season | null
+      setSeason(currentSeason)
 
       let rankingData: any = null
-      if (season) {
+      if (currentSeason) {
         const result = await supabase
           .from('rankings')
           .select('*')
           .eq('employee_id', profileId)
-          .eq('season_id', season.id)
+          .eq('season_id', currentSeason.id)
           .single()
         rankingData = result
         setRanking(result.data as Ranking | null)
+
+        // Fetch top 3
+        const topRes = await supabase
+          .from('rankings')
+          .select('employee_id, total_xp, rank_position, profile:profiles(id, full_name, avatar_url)')
+          .eq('season_id', currentSeason.id)
+          .order('total_xp', { ascending: false })
+          .limit(3)
+        
+        // ensure profile is an object, not array
+        const mappedTop = (topRes.data ?? []).map((t: any) => ({
+          ...t,
+          profile: Array.isArray(t.profile) ? t.profile[0] : t.profile
+        }))
+        setTopPlayers(mappedTop)
       }
 
-      // Fetch Quests (do dia/semana que o colaborador precisa fazer)
+      // Fetch First Incomplete Quest
       const { data: questsData } = await supabase
         .from('employee_quests')
         .select(`
-          id, progress, completed, validation_status,
-          quest:quests(id, name, description, xp_reward, coin_reward, bp_xp_reward, target_value, frequency, requires_proof)
+          id, progress, completed,
+          quest:quests(name, target_value)
         `)
         .eq('employee_id', profileId)
-        .order('completed', { ascending: true }) // não completadas primeiro
+        .eq('completed', false)
+        .limit(1)
 
-      // As vezes o TS reclama quando é join de uma linha 
-      const mappedQuests = (questsData ?? []).map((q: any) => ({
-        ...q,
-        quest: Array.isArray(q.quest) ? q.quest[0] : q.quest
-      })) as EmployeeQuest[]
+      if (questsData && questsData.length > 0) {
+        setFirstQuest({
+          ...questsData[0],
+          quest: Array.isArray(questsData[0].quest) ? questsData[0].quest[0] : questsData[0].quest
+        } as EmployeeQuest)
+      }
 
-      setQuests(mappedQuests)
-
-      // Fetch Badges (apenas as que ele já tem para mostrar na vitrine)
-      const { data: badgesData } = await supabase
-        .from('employee_badges')
-        .select(`
-          id, unlocked_at,
-          badge:badges(id, name, icon, rarity)
-        `)
-        .eq('employee_id', profileId)
-        .order('unlocked_at', { ascending: false })
-        .limit(4) // mostra as 4 últimas
-
-      const mappedBadges = (badgesData ?? []).map((b: any) => ({
-        ...b,
-        badge: Array.isArray(b.badge) ? b.badge[0] : b.badge
-      })) as EmployeeBadge[]
-
-      setBadges(mappedBadges)
-
-      // Fetch Battle Pass ativo
+      // Fetch Battle Pass
       const { data: bpSeasonData } = await supabase
         .from('battle_pass_seasons')
         .select('*')
@@ -144,26 +115,15 @@ export default function Dashboard() {
 
       if (bpSeasonData) {
         setBpSeason(bpSeasonData as BattlePassSeason)
-        const [bpProgressRes, bpRewardsRes] = await Promise.all([
-          supabase.from('battle_pass_progress')
+        const bpProgressRes = await supabase.from('battle_pass_progress')
             .select('*')
             .eq('employee_id', profileId)
             .eq('season_id', bpSeasonData.id)
-            .maybeSingle(),
-          supabase.from('battle_pass_rewards')
-            .select('*')
-            .eq('season_id', bpSeasonData.id)
-            .eq('is_active', true)
-            .order('level'),
-        ])
-        const prog = bpProgressRes.data as BattlePassProgress | null
-        setBpProgress(prog)
-        const currentLevel = prog?.current_level ?? 0
-        const nextReward = (bpRewardsRes.data ?? []).find((r: any) => r.level === currentLevel + 1)
-        setBpNextReward((nextReward ?? null) as BattlePassReward | null)
+            .maybeSingle()
+        setBpProgress(bpProgressRes.data as BattlePassProgress | null)
       }
 
-      // Detectar Level Up
+      // Detect Level Up
       const xpPerLevelCalc = settingsData.xp_per_level
       const rankDataFetched = rankingData?.data as Ranking | null
       if (rankDataFetched) {
@@ -185,53 +145,10 @@ export default function Dashboard() {
     void fetchAll()
   }, [fetchAll])
 
-  // File Upload Handling
-  const handleUploadProof = async (eqId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file || !profileId) return
-    
-    // Validate file size and type (basic validation)
-    if (file.size > 5 * 1024 * 1024) {
-      return toast.error('O arquivo deve ter no máximo 5MB')
-    }
-
-    const toastId = toast.loading('Enviando comprovante...')
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${profileId}_${eqId}_${Date.now()}.${fileExt}`
-      
-      const { error: uploadError } = await supabase.storage
-        .from('quest_proofs')
-        .upload(fileName, file)
-
-      if (uploadError) throw uploadError
-
-      const { data: publicUrlData } = supabase.storage
-        .from('quest_proofs')
-        .getPublicUrl(fileName)
-
-      const { error: updError } = await supabase
-        .from('employee_quests')
-        .update({ 
-          proof_url: publicUrlData.publicUrl,
-          validation_status: 'pending'
-        })
-        .eq('id', eqId)
-
-      if (updError) throw updError
-
-      toast.success('Comprovante enviado com sucesso!', { id: toastId })
-      void fetchAll()
-    } catch (err: any) {
-      console.error(err)
-      toast.error(err.message || 'Erro ao enviar o comprovante', { id: toastId })
-    }
-  }
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-higame-purple border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen w-screen bg-[#0a0f1c] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-higame-neon border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -239,323 +156,229 @@ export default function Dashboard() {
   const totalXp = ranking?.total_xp ?? 0
   const xpPerLevel = settings?.xp_per_level ?? 1000
   const level = calculateLevel(totalXp, xpPerLevel)
-  const currentLevelXp = totalXp % xpPerLevel
-  const progressPercent = Math.min(100, Math.max(0, (currentLevelXp / xpPerLevel) * 100))
-  const streak = profile?.current_streak ?? 0
-  const longestStreak = profile?.longest_streak ?? 0
+  const coins = profile?.coins_balance ?? 0
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
+    <div className="h-screen w-screen bg-[#0a0f1c] overflow-hidden relative font-outfit text-white">
+      {/* Background */}
+      <img src="/assets/lobby_bg.png" alt="Lobby BG" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-screen" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-transparent to-[#0a0f1c]/50 pointer-events-none" />
+
       {/* Premium Toast Container */}
       <PremiumToastContainer toasts={toasts} onDismiss={dismissToast} />
-      
-      {/* 1. HERO SECTION */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <ProfileBanner
-          bannerUrl={profile?.active_banner?.asset_url}
-          className="relative overflow-hidden rounded-[2rem] shadow-2xl border border-white/10"
-        >
-          {/* Fallback dark background if no banner */}
-          {!profile?.active_banner?.asset_url && (
-            <div className="absolute inset-0 bg-slate-900" />
-          )}
-          
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay" />
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-higame-purple/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-higame-neon/20 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
-        <div className="relative p-8 sm:p-10 flex flex-col md:flex-row gap-8 items-center md:items-start z-10">
-          
-          <div className="relative group cursor-pointer">
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-higame-neon via-higame-purple to-higame-neon opacity-70 blur-md group-hover:opacity-100 transition duration-500 animate-pulse-glow" />
-            <AvatarFrame 
-              avatarUrl={profile?.avatar_url}
-              fullName={profile?.full_name || 'Usuário'}
-              size="xl"
-              frameRarity={profile?.active_frame?.rarity}
-              frameUrl={profile?.active_frame?.asset_url}
-              className="relative z-10"
-            />
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 bg-slate-950 border-2 border-higame-neon text-white px-4 py-1 rounded-full font-outfit font-black text-lg shadow-glow-neon flex items-center gap-1">
-              <Star className="w-4 h-4 text-higame-neon fill-higame-neon" />
-              {level}
-            </div>
-          </div>
-
-          <div className="flex-1 text-center md:text-left mt-2">
-            {/* Streak badge compacto no hero */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">
-              <Flame className="w-3.5 h-3.5" /> {streak > 0 ? `🔥 ${streak} dias em sequência` : 'Comece sua sequência!'}
-            </div>
-            
-            <h1 className="text-3xl sm:text-4xl font-outfit font-black text-white mb-1 tracking-tight flex items-center gap-3">
-              {profile?.full_name ?? 'Colaborador'}
-            </h1>
-            {profile?.active_title && (
-              <span className="inline-block mt-1 mb-2 px-2 py-0.5 rounded text-xs font-bold tracking-widest uppercase bg-higame-purple/20 text-higame-purple border border-higame-purple/30">
-                {profile.active_title.name}
-              </span>
-            )}
-            <p className="text-higame-neon font-medium text-lg mb-6">{profile?.position ?? 'Sem Cargo'}</p>
-
-            <div className="max-w-xl">
-              <div className="flex justify-between text-sm font-inter font-bold text-slate-300 mb-2">
-                <span>XP Total: <span className="text-white">{totalXp.toLocaleString()}</span></span>
-                <span>Faltam {xpPerLevel - currentLevelXp} XP</span>
-              </div>
-              
-              <div className="h-4 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10 relative shadow-inner">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 1.5, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-higame-purple to-higame-neon relative"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-                </motion.div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md min-w-[140px]">
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Rank Atual</p>
-            {ranking?.rank_position ? (
-              <div className="text-4xl font-outfit font-black text-transparent bg-clip-text bg-gradient-to-br from-amber-200 to-amber-500">
-                #{ranking.rank_position}
-              </div>
-            ) : (
-              <div className="text-2xl font-outfit font-black text-slate-500">--</div>
-            )}
-            <p className="text-xs text-slate-400 mt-2">Temporada Ativa</p>
-          </div>
-        </div>
-        </ProfileBanner>
-      </motion.div>
-
-      {/* 2. BATTLE PASS CARD */}
-      {bpSeason && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Link to="/battle-pass" className="block group">
-            <div className="relative overflow-hidden rounded-[2rem] border border-purple-500/20 bg-gradient-to-br from-slate-900 via-purple-950/30 to-slate-900 p-6 sm:p-8 hover:border-purple-500/40 transition-all shadow-[0_0_40px_rgba(147,51,234,0.1)] hover:shadow-[0_0_60px_rgba(147,51,234,0.2)]">
-              <div className="absolute top-0 right-0 w-[400px] h-[300px] bg-purple-600/10 rounded-full blur-[100px]" />
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.5)] flex-shrink-0">
-                    <Shield className="w-7 h-7 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-purple-400 mb-0.5">Battle Pass</p>
-                    <h3 className="text-lg font-black text-white">{bpSeason.name}</h3>
-                    <p className="text-sm text-slate-400">
-                      {bpProgress ? `Nível ${bpProgress.current_level} de ${bpSeason.max_level}` : 'Comece sua jornada!'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6">
-                  {/* Próxima recompensa */}
-                  {bpNextReward && (
-                    <div className="hidden sm:flex items-center gap-2 text-center">
-                      <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-2xl">{bpNextReward.icon || '🎁'}</p>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Próx. recompensa</p>
-                        <p className="text-xs font-bold text-white">{bpNextReward.name}</p>
-                        <p className="text-[10px] text-purple-400">Nível {bpNextReward.level}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* XP + Barra */}
-                  <div className="w-40 sm:w-48">
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-amber-500 flex items-center gap-1">
-                        <Trophy className="w-3 h-3" />{(bpProgress?.current_xp ?? 0).toLocaleString()} Troféus
-                      </span>
-                      <span className="text-slate-500">{bpSeason.xp_per_level}</span>
-                    </div>
-                    <div className="h-2.5 bg-slate-950 rounded-full overflow-hidden border border-white/10">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, ((bpProgress?.current_xp ?? 0) / bpSeason.xp_per_level) * 100)}%` }}
-                        transition={{ duration: 1.2, ease: 'easeOut' }}
-                        className="h-full bg-gradient-to-r from-amber-500 to-amber-300"
-                      />
-                    </div>
-                  </div>
-
-                  <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-purple-400 transition-colors flex-shrink-0" />
-                </div>
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-      )}
-
-      {/* 3. MISSÕES (QUESTS) */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-3 px-2">
-          <Target className="w-6 h-6 text-higame-neon" />
-          <h2 className="text-2xl font-outfit font-bold text-white">Minhas Missões</h2>
-        </div>
+      {/* --- TOP BAR --- */}
+      <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-40 pointer-events-none">
         
-        {quests.length === 0 ? (
-          <div className="glass-card p-10 text-center border-dashed border-white/10 text-slate-400">
-            Você não possui missões ativas no momento. Seu gestor logo enviará novas missões!
+        {/* Profile Badge (Clickable) */}
+        <div 
+          onClick={() => navigate('/profile')} 
+          className="pointer-events-auto cursor-pointer bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-xl p-2 flex items-center gap-3 shadow-lg hover:bg-slate-800 transition-colors"
+        >
+          <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-higame-neon bg-slate-800">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-sm font-bold">{profile?.full_name?.charAt(0) || 'U'}</div>
+            )}
+            <div className="absolute bottom-0 left-0 right-0 bg-higame-neon text-[#0a0f1c] text-[9px] font-black text-center py-0.5 uppercase tracking-wider">
+              LVL {level}
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {quests.map((eq, i) => (
-              <motion.div
-                key={eq.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.1 }}
-                className={`relative overflow-hidden rounded-2xl p-5 border flex flex-col justify-between ${
-                  eq.completed 
-                    ? 'bg-higame-success/10 border-higame-success/30' 
-                    : 'glass-card'
-                }`}
-              >
-                {eq.completed && (
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-higame-success/20 blur-3xl -translate-y-1/2 translate-x-1/2" />
-                )}
-                
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div className={`p-2 rounded-xl ${eq.completed ? 'bg-higame-success/20 text-higame-success' : 'bg-slate-800 text-higame-neon'}`}>
-                    {eq.completed ? <CheckCircle2 className="w-5 h-5" /> : <Target className="w-5 h-5" />}
-                  </div>
-                  <div className="flex gap-2">
-                    {eq.quest.xp_reward > 0 && (
-                      <span className="text-[10px] font-bold text-higame-purple bg-higame-purple/20 px-2 py-1 rounded-md whitespace-nowrap">
-                        +{eq.quest.xp_reward} XP
-                      </span>
-                    )}
-                    {eq.quest.coin_reward > 0 && (
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-400/20 px-2 py-1 rounded-md whitespace-nowrap">
-                        +{eq.quest.coin_reward} HC
-                      </span>
-                    )}
-                    {eq.quest.bp_xp_reward > 0 && (
-                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/20 px-2 py-1 rounded-md whitespace-nowrap border border-amber-500/20 flex items-center gap-1">
-                        <Trophy className="w-3 h-3" /> +{eq.quest.bp_xp_reward} Troféus
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <h3 className="font-outfit font-bold text-white mb-2 relative z-10">{eq.quest.name}</h3>
-                <p className="text-xs text-slate-400 font-inter mb-4 flex-1">{eq.quest.description}</p>
-
-                <div className="relative z-10">
-                  <div className="flex justify-between text-xs font-bold text-slate-400 mb-2">
-                    <span>Progresso</span>
-                    <span>{eq.progress} / {eq.quest.target_value}</span>
-                  </div>
-                  <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden mb-3">
-                    <div 
-                      className={`h-full ${eq.completed ? 'bg-higame-success' : 'bg-higame-neon'}`} 
-                      style={{ width: `${Math.min(100, (eq.progress / eq.quest.target_value) * 100)}%` }} 
-                    />
-                  </div>
-
-                  {eq.quest.requires_proof && !eq.completed && (
-                    <div className="mt-3">
-                      {eq.validation_status === 'pending' ? (
-                        <div className="text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-2 rounded-lg text-center flex items-center justify-center gap-2">
-                          <Shield className="w-4 h-4" /> Comprovante em Análise
-                        </div>
-                      ) : eq.validation_status === 'rejected' ? (
-                        <label className="text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors cursor-pointer px-3 py-2 rounded-lg text-center flex items-center justify-center gap-2 w-full">
-                          Reenviar Comprovante
-                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleUploadProof(eq.id, e)} />
-                        </label>
-                      ) : (
-                        <label className="text-xs font-bold text-white bg-slate-700 hover:bg-slate-600 border border-white/10 transition-colors cursor-pointer px-3 py-2 rounded-lg text-center flex items-center justify-center gap-2 w-full">
-                          Anexar Comprovante
-                          <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleUploadProof(eq.id, e)} />
-                        </label>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+          <div className="pr-2">
+            <h3 className="text-sm font-black tracking-tight">{profile?.full_name?.split(' ')[0]}</h3>
+            <div className="flex items-center gap-1 text-amber-400 text-xs font-black">
+              <Trophy className="w-3.5 h-3.5" /> {totalXp.toLocaleString()}
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Right Currencies & Menu */}
+        <div className="flex items-center gap-3 pointer-events-auto">
+          {/* Coins */}
+          <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-lg">
+            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <span className="font-black text-sm">{coins.toLocaleString()}</span>
+          </div>
+          {/* Menu Btn */}
+          <button onClick={() => signOut()} className="w-10 h-10 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 transition-colors">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      {/* 3. VITRINE DE CONQUISTAS */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-3">
-            <Trophy className="w-6 h-6 text-amber-400" />
-            <h2 className="text-2xl font-outfit font-bold text-white">Minhas Conquistas</h2>
-          </div>
-          <Link to="/badges" className="text-sm font-inter font-bold text-higame-neon hover:text-white transition-colors flex items-center gap-1">
-            Ver todas <ChevronRight className="w-4 h-4" />
+      {/* --- LEFT SIDEBAR (Navigation) --- */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-40">
+        {[
+          { icon: ShoppingCart, label: 'LOJA', path: '/store', color: 'from-blue-500 to-cyan-400' },
+          { icon: Users, label: 'JOGADORES', path: '/players', color: 'from-purple-500 to-pink-500' },
+          { icon: Trophy, label: 'RANKING', path: '/ranking', color: 'from-amber-500 to-orange-500' },
+          { icon: Newspaper, label: 'NEWS', path: '/dashboard', color: 'from-emerald-500 to-teal-400' },
+        ].map((item, i) => (
+          <Link key={i} to={item.path} className="group flex flex-col items-center">
+            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} p-[2px] shadow-lg group-hover:scale-105 transition-transform cursor-pointer`}>
+              <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center relative overflow-hidden">
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-20`} />
+                <item.icon className="w-6 h-6 text-white relative z-10" />
+              </div>
+            </div>
+            <span className="text-[10px] font-black mt-1 tracking-wider text-slate-300 drop-shadow-md group-hover:text-white transition-colors">{item.label}</span>
           </Link>
-        </div>
-
-        {badges.length === 0 ? (
-          <div className="glass-card p-10 text-center border-dashed border-white/10 text-slate-400">
-            Você ainda não possui nenhuma medalha. Continue se esforçando para desbloqueá-las!
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {badges.map((eb, i) => (
-              <motion.div
-                key={eb.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + (i * 0.1) }}
-                className="relative overflow-hidden rounded-2xl p-6 border bg-slate-900/50 backdrop-blur-md flex flex-col items-center text-center group"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-b ${RARITY_COLORS[eb.badge.rarity]} opacity-5 group-hover:opacity-10 transition-opacity`} />
-                
-                <div className={`w-16 h-16 rounded-2xl border-2 mb-3 flex items-center justify-center text-3xl transform group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-300 bg-gradient-to-br ${RARITY_COLORS[eb.badge.rarity]}`}>
-                  {eb.badge.icon}
-                </div>
-
-                <h3 className="font-outfit font-bold text-white text-sm mb-1">{eb.badge.name}</h3>
-                <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                  {new Date(eb.unlocked_at).toLocaleDateString()}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+        ))}
       </div>
 
-      {/* 4. STREAK + FEED SOCIAL */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Streak Card */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 px-1">
-            <Flame className="w-6 h-6 text-orange-400" />
-            <h2 className="text-2xl font-outfit font-bold text-white">Minha Sequência</h2>
+      {/* --- RIGHT SIDEBAR (Players/Friends) --- */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 w-16 bg-slate-900/60 backdrop-blur-md border border-white/10 rounded-3xl py-4 flex flex-col items-center gap-3 z-40">
+        <span className="text-[9px] font-black text-slate-400 tracking-widest -rotate-90 my-6">PLAYERS</span>
+        {topPlayers.map((player) => (
+          <div key={player.employee_id} className="relative group cursor-pointer">
+            <div className="w-10 h-10 rounded-full border-2 border-slate-700 overflow-hidden bg-slate-800 hover:border-higame-neon transition-colors">
+              {player.profile.avatar_url ? (
+                <img src={player.profile.avatar_url} alt="P" className="w-full h-full object-cover" />
+              ) : (
+                <span className="w-full h-full flex items-center justify-center text-xs font-bold">{player.profile.full_name?.charAt(0)}</span>
+              )}
+            </div>
+            {/* Tooltip */}
+            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-slate-900 border border-white/10 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+              <p className="text-xs font-bold text-white">{player.profile.full_name}</p>
+              <p className="text-[10px] text-amber-400 font-bold">{player.total_xp} XP</p>
+            </div>
           </div>
-          <StreakCard currentStreak={streak} longestStreak={longestStreak} />
+        ))}
+      </div>
+
+      {/* --- CENTER PODIUM --- */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pt-10">
+        
+        {/* Title */}
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', bounce: 0.5 }}
+          className="text-center mb-8 relative"
+        >
+          <div className="absolute inset-0 bg-amber-500 blur-3xl opacity-20" />
+          <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-orange-600 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] filter drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{ WebkitTextStroke: '2px #7c2d12' }}>
+            PÓDIO
+          </h1>
+          <h2 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-200 to-slate-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] mt-[-10px]" style={{ WebkitTextStroke: '1px #1e293b' }}>
+            TEMPORADA #{season?.id?.substring(0,2) || '1'}
+          </h2>
+          {ranking && (
+             <div className="absolute -right-10 top-0 bg-higame-purple border border-white/20 text-white px-3 py-1 rounded-lg text-xs font-black shadow-xl rotate-12">
+               RANK ATUAL<br/>
+               <span className="text-2xl text-amber-300">#{ranking.rank_position}</span>
+             </div>
+          )}
+        </motion.div>
+
+        {/* Podium Structure */}
+        <div className="flex items-end justify-center h-48 md:h-64 mt-4 relative z-20 w-full max-w-2xl px-16">
+          
+          {/* Top 2 */}
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="w-1/3 flex flex-col items-center relative z-10">
+             {topPlayers[1] && (
+               <div className="relative mb-2 flex flex-col items-center">
+                 <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-800 rounded-full border-4 border-slate-300 overflow-hidden shadow-[0_0_15px_rgba(203,213,225,0.5)] z-20">
+                   {topPlayers[1].profile.avatar_url && <img src={topPlayers[1].profile.avatar_url} className="w-full h-full object-cover" />}
+                 </div>
+                 <div className="bg-slate-900 border border-slate-300 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap">
+                   {topPlayers[1].profile.full_name.split(' ')[0]}
+                 </div>
+               </div>
+             )}
+             <div className="w-full h-24 md:h-32 bg-gradient-to-b from-slate-400 to-slate-600 rounded-t-lg border-t-4 border-slate-300 flex items-center justify-center relative shadow-2xl">
+               <span className="text-4xl font-black text-slate-200/50">2</span>
+             </div>
+          </motion.div>
+
+          {/* Top 1 */}
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-1/3 flex flex-col items-center relative z-20">
+             {topPlayers[0] && (
+               <div className="relative mb-2 flex flex-col items-center">
+                 <div className="absolute -top-6 text-amber-400 text-3xl animate-bounce">👑</div>
+                 <div className="w-20 h-20 md:w-28 md:h-28 bg-slate-800 rounded-full border-4 border-amber-400 overflow-hidden shadow-[0_0_30px_rgba(251,191,36,0.6)] z-20">
+                   {topPlayers[0].profile.avatar_url && <img src={topPlayers[0].profile.avatar_url} className="w-full h-full object-cover" />}
+                 </div>
+                 <div className="bg-amber-500 border border-amber-200 text-slate-900 text-xs md:text-sm font-black px-3 py-1 rounded-full -mt-4 z-30 shadow-lg whitespace-nowrap">
+                   {topPlayers[0].profile.full_name.split(' ')[0]}
+                 </div>
+               </div>
+             )}
+             <div className="w-full h-32 md:h-44 bg-gradient-to-b from-amber-400 to-orange-600 rounded-t-lg border-t-4 border-amber-200 flex items-center justify-center relative shadow-2xl">
+               <span className="text-6xl font-black text-amber-200/50">1</span>
+             </div>
+          </motion.div>
+
+          {/* Top 3 */}
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }} className="w-1/3 flex flex-col items-center relative z-10">
+             {topPlayers[2] && (
+               <div className="relative mb-2 flex flex-col items-center">
+                 <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-800 rounded-full border-4 border-amber-700 overflow-hidden shadow-[0_0_15px_rgba(180,83,9,0.5)] z-20">
+                   {topPlayers[2].profile.avatar_url && <img src={topPlayers[2].profile.avatar_url} className="w-full h-full object-cover" />}
+                 </div>
+                 <div className="bg-slate-900 border border-amber-700 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap">
+                   {topPlayers[2].profile.full_name.split(' ')[0]}
+                 </div>
+               </div>
+             )}
+             <div className="w-full h-16 md:h-24 bg-gradient-to-b from-amber-700 to-amber-900 rounded-t-lg border-t-4 border-amber-600 flex items-center justify-center relative shadow-2xl">
+               <span className="text-3xl font-black text-amber-500/50">3</span>
+             </div>
+          </motion.div>
+          
+        </div>
+      </div>
+
+      {/* --- BOTTOM SECTION --- */}
+      <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end z-40 pointer-events-none">
+        
+        {/* Battle Pass Widget */}
+        <Link to="/battle-pass" className="pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-purple-500/30 rounded-2xl p-3 w-56 flex items-center gap-3 shadow-lg hover:border-purple-400 transition-colors group">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(147,51,234,0.4)] group-hover:scale-110 transition-transform">
+            <Shield className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-xs font-black text-white leading-tight mb-1">BATTLE PASS</h4>
+            <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-white/10 relative">
+              <div 
+                className="h-full bg-gradient-to-r from-purple-400 to-higame-neon" 
+                style={{ width: bpProgress && bpSeason ? `${Math.min(100, (bpProgress.current_xp / bpSeason.xp_per_level)*100)}%` : '0%' }}
+              />
+            </div>
+            <p className="text-[9px] text-slate-400 font-bold mt-1 text-right">LVL {bpProgress?.current_level ?? 0}</p>
+          </div>
+        </Link>
+
+        {/* Quests Widget */}
+        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-3 w-64 shadow-lg flex flex-col cursor-default">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="w-4 h-4 text-emerald-400" />
+            <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Missão Ativa</h4>
+          </div>
+          {firstQuest ? (
+            <>
+              <p className="text-xs font-bold text-white truncate mb-2">{firstQuest.quest.name}</p>
+              <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold mb-1">
+                <span>Progresso</span>
+                <span>{firstQuest.progress} / {firstQuest.quest.target_value}</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (firstQuest.progress / firstQuest.quest.target_value)*100)}%` }} />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-slate-400 text-center py-2">Nenhuma missão ativa</p>
+          )}
         </div>
 
-        {/* Feed Social */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 px-1">
-            <Users className="w-6 h-6 text-higame-purple" />
-            <h2 className="text-2xl font-outfit font-bold text-white">Atividade da Equipe</h2>
-          </div>
-          <div className="glass-card p-4">
-            <SocialFeed limit={12} />
-          </div>
-        </div>
+        {/* Big PLAY Button */}
+        <button className="pointer-events-auto bg-gradient-to-b from-amber-300 to-amber-500 hover:to-orange-500 border-4 border-amber-200 rounded-2xl px-12 py-4 flex items-center gap-2 shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-105 active:scale-95 transition-all">
+          <Play className="w-8 h-8 text-[#7c2d12] fill-[#7c2d12]" />
+          <span className="text-3xl font-black text-[#7c2d12] tracking-widest drop-shadow-sm">PLAY</span>
+        </button>
+
       </div>
 
     </div>

@@ -41,14 +41,20 @@ export default function App() {
           {/* Pública */}
           <Route path="/login" element={<Login />} />
 
-          {/* Área do Colaborador */}
+          {/* Lobby Principal (Dashboard) */}
+          <Route path="/dashboard" element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          } />
+
+          {/* Área do Colaborador (Páginas com Layout Padrão) */}
           <Route path="/" element={
             <PrivateRoute>
               <AppLayout />
             </PrivateRoute>
           }>
             <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
             <Route path="ranking" element={<Ranking />} />
             <Route path="seasons" element={<Seasons />} />
             <Route path="profile" element={<Profile />} />
