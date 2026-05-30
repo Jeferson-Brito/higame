@@ -41,6 +41,7 @@ export default function Dashboard() {
   // Real data state
   const [season, setSeason] = useState<Season | null>(null)
   const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([])
+  const [allPlayers, setAllPlayers] = useState<TopPlayer[]>([])
   const [firstQuest, setFirstQuest] = useState<EmployeeQuest | null>(null)
   const [bpSeason, setBpSeason] = useState<BattlePassSeason | null>(null)
   const [bpProgress, setBpProgress] = useState<BattlePassProgress | null>(null)
@@ -71,20 +72,31 @@ export default function Dashboard() {
         rankingData = result
         setRanking(result.data as Ranking | null)
 
-        // Fetch top 3
-        const topRes = await supabase
-          .from('rankings')
-          .select('employee_id, total_xp, rank_position, profile:profiles(id, full_name, avatar_url)')
-          .eq('season_id', currentSeason.id)
-          .order('total_xp', { ascending: false })
-          .limit(3)
-        
-        // ensure profile is an object, not array
-        const mappedTop = (topRes.data ?? []).map((t: any) => ({
-          ...t,
-          profile: Array.isArray(t.profile) ? t.profile[0] : t.profile
-        }))
-        setTopPlayers(mappedTop)
+        // Fetch ALL employees and their rankings
+        const [profilesRes, rankingsRes] = await Promise.all([
+          supabase.from('profiles').select('id, full_name, avatar_url').eq('role', 'employee'),
+          supabase.from('rankings').select('employee_id, total_xp, rank_position').eq('season_id', currentSeason.id)
+        ])
+
+        const allEmps = profilesRes.data ?? []
+        const seasonRanks = rankingsRes.data ?? []
+
+        // Map and merge
+        const mappedPlayers: TopPlayer[] = allEmps.map((emp: any) => {
+          const r = seasonRanks.find((rank: any) => rank.employee_id === emp.id)
+          return {
+            employee_id: emp.id,
+            total_xp: r ? r.total_xp : 0,
+            rank_position: r ? r.rank_position : 999,
+            profile: emp
+          }
+        })
+
+        // Sort by total_xp desc
+        mappedPlayers.sort((a, b) => b.total_xp - a.total_xp)
+
+        setAllPlayers(mappedPlayers)
+        setTopPlayers(mappedPlayers.slice(0, 3))
       }
 
       // Fetch First Incomplete Quest
@@ -235,7 +247,7 @@ export default function Dashboard() {
       {/* --- RIGHT SIDEBAR (Players/Friends) --- */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 w-16 bg-slate-900/60 backdrop-blur-md border border-white/10 rounded-3xl py-4 flex flex-col items-center gap-3 z-40">
         <span className="text-[9px] font-black text-slate-400 tracking-widest -rotate-90 my-6">PLAYERS</span>
-        {topPlayers.map((player) => (
+        {allPlayers.map((player) => (
           <div key={player.employee_id} className="relative group cursor-pointer">
             <div className="w-10 h-10 rounded-full border-2 border-slate-700 overflow-hidden bg-slate-800 hover:border-higame-neon transition-colors">
               {player.profile.avatar_url ? (
@@ -288,9 +300,10 @@ export default function Dashboard() {
                  <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-800 rounded-full border-4 border-slate-300 overflow-hidden shadow-[0_0_15px_rgba(203,213,225,0.5)] z-20">
                    {topPlayers[1].profile.avatar_url && <img src={topPlayers[1].profile.avatar_url} className="w-full h-full object-cover" />}
                  </div>
-                 <div className="bg-slate-900 border border-slate-300 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap">
-                   {topPlayers[1].profile.full_name.split(' ')[0]}
-                 </div>
+                 <div className="bg-slate-900 border border-slate-300 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap flex flex-col items-center">
+                    <span>{topPlayers[1].profile.full_name.split(' ')[0]}</span>
+                    <span className="text-[9px] text-amber-400 flex items-center gap-1"><Trophy className="w-2.5 h-2.5" /> {topPlayers[1].total_xp.toLocaleString()}</span>
+                  </div>
                </div>
              )}
              <div className="w-full h-24 md:h-32 bg-gradient-to-b from-slate-400 to-slate-600 rounded-t-lg border-t-4 border-slate-300 flex items-center justify-center relative shadow-2xl">
@@ -306,9 +319,10 @@ export default function Dashboard() {
                  <div className="w-20 h-20 md:w-28 md:h-28 bg-slate-800 rounded-full border-4 border-amber-400 overflow-hidden shadow-[0_0_30px_rgba(251,191,36,0.6)] z-20">
                    {topPlayers[0].profile.avatar_url && <img src={topPlayers[0].profile.avatar_url} className="w-full h-full object-cover" />}
                  </div>
-                 <div className="bg-amber-500 border border-amber-200 text-slate-900 text-xs md:text-sm font-black px-3 py-1 rounded-full -mt-4 z-30 shadow-lg whitespace-nowrap">
-                   {topPlayers[0].profile.full_name.split(' ')[0]}
-                 </div>
+                 <div className="bg-amber-500 border border-amber-200 text-slate-900 text-xs md:text-sm font-black px-3 py-1 rounded-full -mt-4 z-30 shadow-lg whitespace-nowrap flex flex-col items-center">
+                    <span>{topPlayers[0].profile.full_name.split(' ')[0]}</span>
+                    <span className="text-[10px] font-black flex items-center gap-1"><Trophy className="w-3 h-3 text-slate-800" /> {topPlayers[0].total_xp.toLocaleString()}</span>
+                  </div>
                </div>
              )}
              <div className="w-full h-32 md:h-44 bg-gradient-to-b from-amber-400 to-orange-600 rounded-t-lg border-t-4 border-amber-200 flex items-center justify-center relative shadow-2xl">
@@ -323,9 +337,10 @@ export default function Dashboard() {
                  <div className="w-14 h-14 md:w-16 md:h-16 bg-slate-800 rounded-full border-4 border-amber-700 overflow-hidden shadow-[0_0_15px_rgba(180,83,9,0.5)] z-20">
                    {topPlayers[2].profile.avatar_url && <img src={topPlayers[2].profile.avatar_url} className="w-full h-full object-cover" />}
                  </div>
-                 <div className="bg-slate-900 border border-amber-700 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap">
-                   {topPlayers[2].profile.full_name.split(' ')[0]}
-                 </div>
+                 <div className="bg-slate-900 border border-amber-700 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-full -mt-3 z-30 shadow-md whitespace-nowrap flex flex-col items-center">
+                    <span>{topPlayers[2].profile.full_name.split(' ')[0]}</span>
+                    <span className="text-[9px] text-amber-400 flex items-center gap-1"><Trophy className="w-2.5 h-2.5" /> {topPlayers[2].total_xp.toLocaleString()}</span>
+                  </div>
                </div>
              )}
              <div className="w-full h-16 md:h-24 bg-gradient-to-b from-amber-700 to-amber-900 rounded-t-lg border-t-4 border-amber-600 flex items-center justify-center relative shadow-2xl">
