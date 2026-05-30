@@ -418,7 +418,7 @@ export default function BattlePass() {
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider leading-none mb-1">XP Total Acumulado</p>
+              <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider leading-none mb-1">Troféus Acumulados</p>
               <p className="text-xl sm:text-2xl font-black text-white leading-none">{totalXp.toLocaleString()}</p>
             </div>
           </div>
@@ -448,8 +448,10 @@ export default function BattlePass() {
             
             <div className="relative flex items-center h-full" style={{ paddingLeft: 'calc(50vw - 70px)', paddingRight: 'calc(50vw - 70px)' }}>
               
+              {/* Linha Contínua Fundo (Laranja Escuro) */}
               <div className="absolute h-8 bg-[#9a3412] left-0 right-0 border-y-2 border-[#7c2d12]" style={{ top: '65%' }} />
               
+              {/* Linha de Progresso Preenchida (Laranja Brilhante) */}
               <div className="absolute h-8 bg-[#f59e0b] left-0 shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-1000 border-y-2 border-[#d97706]" 
                    style={{ 
                      width: `calc(50vw - 150px + ${totalXp / xpPerLevel * 150}px)`, 
@@ -457,9 +459,24 @@ export default function BattlePass() {
                    }}>
                 <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40" />
                 <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+
+                {/* Marcador do Jogador (Avatar + Troféus) */}
+                <div className="absolute top-10 right-0 translate-x-1/2 flex flex-col items-center gap-1 z-20 pointer-events-none">
+                  <div className="relative w-10 h-10 rounded-full border-2 border-[#f59e0b] bg-slate-800 shadow-[0_0_15px_rgba(245,158,11,0.5)] overflow-hidden flex items-center justify-center pointer-events-auto">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-white">{getInitials(profile?.full_name || '')}</span>
+                    )}
+                  </div>
+                  <div className="bg-[#f59e0b] text-[#7c2d12] px-2 py-0.5 rounded-md text-[10px] font-black border border-[#d97706] shadow-lg flex items-center gap-1">
+                    <Trophy className="w-3 h-3" />
+                    {totalXp.toLocaleString()}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-[10px] relative z-10 h-full">
+              <div className="flex relative z-10 h-full">
                 {rewards.map((reward, i) => {
                   const isUnlocked  = currentLevel >= reward.level
                   const isClaimed   = claimedIds.has(reward.id)
@@ -467,8 +484,21 @@ export default function BattlePass() {
                   const playersHere = playersByLevel[reward.level] ?? []
                   const milestoneXP = reward.level * xpPerLevel
 
+                  const prevLevel = i > 0 ? rewards[i-1].level : 1;
+                  const diff = Math.max(0, reward.level - prevLevel);
+                  const marginLeft = i === 0 
+                    ? (reward.level - 1) * 150 
+                    : diff === 0 ? 10 : (diff * 150) - 140;
+
                   return (
-                    <motion.div key={reward.id} data-level={reward.level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.05, 0.5) }}>
+                    <motion.div 
+                      key={reward.id} 
+                      data-level={reward.level} 
+                      initial={{ opacity: 0, y: 20 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ delay: Math.min(i * 0.05, 0.5) }}
+                      style={{ marginLeft: `${marginLeft}px` }}
+                    >
                       <RewardCard
                         reward={reward}
                         isUnlocked={isUnlocked}
