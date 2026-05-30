@@ -173,36 +173,41 @@ export default function Dashboard() {
         {/* Profile Badge (Clickable) */}
         <div 
           onClick={() => navigate('/profile')} 
-          className="pointer-events-auto cursor-pointer bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-xl p-2 flex items-center gap-3 shadow-lg hover:bg-slate-800 transition-colors"
+          className="pointer-events-auto cursor-pointer bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 flex items-center gap-4 shadow-lg hover:bg-slate-800 transition-colors"
         >
-          <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-higame-neon bg-slate-800">
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 border-higame-neon bg-slate-800">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-sm font-bold">{profile?.full_name?.charAt(0) || 'U'}</div>
+              <div className="w-full h-full flex items-center justify-center text-xl font-bold">{profile?.full_name?.charAt(0) || 'U'}</div>
             )}
-            <div className="absolute bottom-0 left-0 right-0 bg-higame-neon text-[#0a0f1c] text-[9px] font-black text-center py-0.5 uppercase tracking-wider">
+            <div className="absolute bottom-0 left-0 right-0 bg-higame-neon text-[#0a0f1c] text-[10px] sm:text-xs font-black text-center py-0.5 uppercase tracking-wider">
               LVL {level}
             </div>
           </div>
-          <div className="pr-2">
-            <h3 className="text-sm font-black tracking-tight">{profile?.full_name?.split(' ')[0]}</h3>
-            <div className="flex items-center gap-1 text-amber-400 text-xs font-black">
-              <Trophy className="w-3.5 h-3.5" /> {totalXp.toLocaleString()}
+          <div className="pr-4">
+            <h3 className="text-lg sm:text-xl font-black tracking-tight">{profile?.full_name?.split(' ')[0]}</h3>
+            <div className="flex items-center gap-1.5 text-amber-400 text-sm font-black">
+              <Trophy className="w-4 h-4" /> {totalXp.toLocaleString()}
             </div>
           </div>
         </div>
 
         {/* Right Currencies & Menu */}
         <div className="flex items-center gap-3 pointer-events-auto">
-          {/* Coins */}
-          <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-lg">
-            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-            <span className="font-black text-sm">{coins.toLocaleString()}</span>
+          {/* Trophies */}
+          <div className="hidden sm:flex bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 items-center gap-2 shadow-lg">
+            <Trophy className="w-5 h-5 text-amber-500 fill-amber-500" />
+            <span className="font-black text-base">{totalXp.toLocaleString()}</span>
+          </div>
+          {/* Coins (HC) */}
+          <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+            <Star className="w-5 h-5 text-higame-neon fill-higame-neon" />
+            <span className="font-black text-base">{coins.toLocaleString()} HC</span>
           </div>
           {/* Menu Btn */}
-          <button onClick={() => signOut()} className="w-10 h-10 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 transition-colors">
-            <LogOut className="w-5 h-5" />
+          <button onClick={() => signOut()} className="w-12 h-12 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 transition-colors ml-2">
+            <LogOut className="w-6 h-6" />
           </button>
         </div>
       </div>
@@ -373,11 +378,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Big PLAY Button */}
-        <button className="pointer-events-auto bg-gradient-to-b from-amber-300 to-amber-500 hover:to-orange-500 border-4 border-amber-200 rounded-2xl px-12 py-4 flex items-center gap-2 shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-105 active:scale-95 transition-all">
-          <Play className="w-8 h-8 text-[#7c2d12] fill-[#7c2d12]" />
-          <span className="text-3xl font-black text-[#7c2d12] tracking-widest drop-shadow-sm">PLAY</span>
-        </button>
+        {/* The Play Button was removed per user request */}
 
       </div>
 
