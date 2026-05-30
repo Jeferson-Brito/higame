@@ -459,16 +459,18 @@ export default function BattlePass() {
             <div className="relative flex items-center h-full" style={{ paddingLeft: 'calc(50vw - 70px)', paddingRight: 'calc(50vw - 70px)' }}>
               
               {/* Linha Contínua Fundo (Laranja Escuro) */}
-              <div className="absolute h-8 bg-[#9a3412] left-0 right-0 border-y-2 border-[#7c2d12]" style={{ top: '65%' }} />
+              <div className="absolute h-8 bg-[#9a3412] right-0 border-y-2 border-[#7c2d12] rounded-l-full" 
+                   style={{ left: 'calc(50vw - 150px)', top: '65%' }} />
               
               {/* Linha de Progresso Preenchida (Laranja Brilhante) */}
-              <div className="absolute h-8 bg-[#f59e0b] left-0 shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-1000 border-y-2 border-[#d97706]" 
+              <div className="absolute h-8 bg-[#f59e0b] shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-1000 border-y-2 border-[#d97706] rounded-l-full" 
                    style={{ 
-                     width: `calc(50vw - 150px + ${totalXp / xpPerLevel * 150}px)`, 
+                     left: 'calc(50vw - 150px)',
+                     width: `${Math.max(0, totalXp / xpPerLevel * 150)}px`, 
                      top: '65%' 
                    }}>
-                <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40" />
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-4 bg-white/40 rounded-r-full" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none rounded-l-full" />
 
                 {/* Marcador do Jogador (Avatar + Troféus) */}
                 <div className="absolute top-10 right-0 translate-x-1/2 flex flex-col items-center gap-1 z-20 pointer-events-none">
