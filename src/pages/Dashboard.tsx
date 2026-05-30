@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getAppSettings } from '@/lib/ranking'
@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [firstQuest, setFirstQuest] = useState<EmployeeQuest | null>(null)
   const [bpSeason, setBpSeason] = useState<BattlePassSeason | null>(null)
   const [bpProgress, setBpProgress] = useState<BattlePassProgress | null>(null)
+  const [gameOver, setGameOver] = useState(false)
   
   const profileId = profile?.id
 
@@ -170,6 +171,13 @@ export default function Dashboard() {
   const level = calculateLevel(totalXp, xpPerLevel)
   const coins = profile?.coins_balance ?? 0
 
+  const handleLogout = () => {
+    setGameOver(true)
+    setTimeout(() => {
+      signOut()
+    }, 2500)
+  }
+
   return (
     <div className="h-screen w-screen bg-[#0a0f1c] overflow-hidden relative font-outfit text-white">
       {/* Background */}
@@ -178,6 +186,34 @@ export default function Dashboard() {
 
       {/* Premium Toast Container */}
       <PremiumToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      <AnimatePresence>
+        {gameOver && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center backdrop-blur-sm"
+          >
+            <motion.h1 
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3, type: 'spring', bounce: 0.5 }}
+              className="text-7xl md:text-9xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-red-500 to-red-800 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]"
+            >
+              GAME OVER
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.5 }}
+              className="mt-8 text-xl font-bold text-red-400 animate-pulse tracking-widest"
+            >
+              SALVANDO PROGRESSO...
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* --- TOP BAR --- */}
       <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-40 pointer-events-none">
@@ -218,7 +254,7 @@ export default function Dashboard() {
             <span className="font-black text-base">{coins.toLocaleString()} HC</span>
           </div>
           {/* Menu Btn */}
-          <button onClick={() => signOut()} className="w-12 h-12 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 transition-colors ml-2">
+          <button onClick={handleLogout} className="w-12 h-12 bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-xl flex items-center justify-center hover:bg-red-500/20 hover:text-red-400 transition-colors ml-2">
             <LogOut className="w-6 h-6" />
           </button>
         </div>
