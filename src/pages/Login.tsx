@@ -1,34 +1,32 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Zap, Shield, Trophy } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import toast from 'react-hot-toast'
-
-const FEATURES = [
-  { icon: Trophy, label: 'Ranking em tempo real' },
-  { icon: Zap,    label: 'Sistema de XP e Níveis' },
-  { icon: Shield, label: 'KPIs Gamificados' },
-]
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  
+  // States for animation
+  const [insertingCoin, setInsertingCoin] = useState(false)
+  const [coinPhase, setCoinPhase] = useState<'falling' | 'inserted' | 'ready'>('falling')
 
   const { signIn, user, profile, isLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Redirecionar se já autenticado
+  // Redirecionar se já autenticado e não estiver rodando a animação
   useEffect(() => {
-    if (!isLoading && user && profile) {
+    if (!isLoading && user && profile && !insertingCoin) {
       const from = (location.state as { from?: Location })?.from?.pathname
       const target = from || (profile.role === 'admin' ? '/admin' : '/dashboard')
       navigate(target, { replace: true })
     }
-  }, [user, profile, isLoading, navigate, location])
+  }, [user, profile, isLoading, navigate, location, insertingCoin])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,183 +47,175 @@ export default function Login() {
           color: '#E2E8F0',
         },
       })
+    } else {
+      // Sucesso no login - Iniciar Animação!
+      setInsertingCoin(true)
+      
+      // Phase 1: Coin falls (1s)
+      setTimeout(() => {
+        setCoinPhase('inserted')
+      }, 800)
+
+      // Phase 2: Ready / Press Start (1.8s)
+      setTimeout(() => {
+        setCoinPhase('ready')
+      }, 1500)
+
+      // Phase 3: Redirect (2.5s)
+      setTimeout(() => {
+        const from = (location.state as { from?: Location })?.from?.pathname
+        // Need to fetch latest profile if not ready yet, but `profile` is in context
+        // In the context, it takes a tiny bit to load the profile, so it's safe to assume it might be ready.
+        // We can just rely on the useEffect redirect now by turning off `insertingCoin`.
+        setInsertingCoin(false)
+      }, 2500)
     }
   }
 
   return (
-    <div className="min-h-screen bg-higame-bg flex">
+    <div className="h-screen w-screen bg-[#0a0f1c] overflow-hidden relative font-outfit text-white flex items-center justify-center">
+      {/* Background idêntico ao Dashboard */}
+      <img src="/assets/lobby_bg.png" alt="Lobby BG" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-screen" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-transparent to-[#0a0f1c]/50 pointer-events-none" />
 
-      {/* === Painel Esquerdo — Branding === */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col items-center justify-center p-12">
-
-        {/* Gradiente de fundo */}
-        <div className="absolute inset-0 bg-gradient-to-br from-higame-purple/20 via-transparent to-higame-neon/10" />
-
-        {/* Partículas decorativas */}
-        <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-higame-purple/10 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-48 h-48 rounded-full bg-higame-neon/10 blur-3xl" />
-
-        {/* Grade decorativa */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'linear-gradient(#7C3AED 1px, transparent 1px), linear-gradient(90deg, #7C3AED 1px, transparent 1px)',
-            backgroundSize: '60px 60px'
-          }}
-        />
-
-        <div className="relative z-10 max-w-md text-center">
-
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="flex items-center justify-center gap-3 mb-8"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-gradient-higame flex items-center justify-center shadow-glow-purple">
-              <Zap className="w-8 h-8 text-white" fill="white" />
-            </div>
-            <span className="text-4xl font-outfit font-black text-gradient">
-              HIGAME
-            </span>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl font-outfit font-bold text-higame-text mb-4"
-          >
-            Gamificação que <span className="text-gradient">motiva</span> equipes
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-higame-muted font-inter text-base leading-relaxed mb-10"
-          >
-            Transforme metas operacionais em um sistema competitivo,
-            visual e motivador para sua equipe de atendimento.
-          </motion.p>
-
-          {/* Features */}
-          <div className="flex flex-col gap-3">
-            {FEATURES.map((f, i) => (
-              <motion.div
-                key={f.label}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3 glass-card px-4 py-3 text-left"
-              >
-                <div className="w-8 h-8 rounded-lg bg-gradient-higame flex items-center justify-center flex-shrink-0">
-                  <f.icon className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-inter font-medium text-higame-text">
-                  {f.label}
-                </span>
-              </motion.div>
-            ))}
+      {/* Caixa de Arcade Central */}
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', bounce: 0.4 }}
+        className="relative z-10 w-full max-w-md bg-slate-900/90 backdrop-blur-xl border-4 border-higame-neon rounded-3xl p-8 shadow-[0_0_50px_rgba(34,211,238,0.3)] overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-higame-neon to-transparent opacity-50" />
+        
+        {/* Header - Título */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-amber-400 flex items-center justify-center shadow-[0_0_20px_rgba(251,191,36,0.5)] mb-4">
+            <Zap className="w-8 h-8 text-amber-400 fill-amber-400 animate-pulse" />
           </div>
+          <h1 className="text-4xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 drop-shadow-md">
+            HIGAME
+          </h1>
+          <p className="text-xs text-higame-neon tracking-[0.2em] font-bold mt-2 uppercase">Arcade Edition</p>
         </div>
-      </div>
 
-      {/* === Painel Direito — Formulário === */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
-        >
-
-          {/* Header mobile */}
-          <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-higame flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" fill="white" />
-            </div>
-            <span className="text-2xl font-outfit font-black text-gradient">HIGAME</span>
-          </div>
-
-          {/* Título */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-outfit font-bold text-higame-text mb-1">
-              Bem-vindo de volta
-            </h2>
-            <p className="text-sm font-inter text-higame-muted">
-              Entre com suas credenciais para acessar a plataforma
-            </p>
-          </div>
-
-          {/* Formulário */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            <div>
-              <label htmlFor="email" className="input-label">Email</label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="input-field"
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="input-label">Senha</label>
-              <div className="relative">
+        {/* Content (Form ou Animação) */}
+        <AnimatePresence mode="wait">
+          {!insertingCoin ? (
+            <motion.form 
+              key="login-form"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              onSubmit={handleSubmit} 
+              className="space-y-6"
+            >
+              <div>
+                <label className="text-[10px] font-black tracking-widest text-slate-400 uppercase mb-1 block">Email</label>
                 <input
-                  id="password"
-                  type={showPass ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="input-field pr-12"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="PLAYER 1 EMAIL"
+                  className="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 font-bold text-white focus:outline-none focus:border-higame-neon transition-colors placeholder:text-slate-600"
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-higame-muted hover:text-higame-text transition-colors"
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 py-3.5"
+              <div>
+                <label className="text-[10px] font-black tracking-widest text-slate-400 uppercase mb-1 block">Senha</label>
+                <div className="relative">
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-4 py-3 font-bold text-white focus:outline-none focus:border-higame-neon transition-colors placeholder:text-slate-600 pr-12"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-higame-neon transition-colors"
+                  >
+                    {showPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full relative group overflow-hidden bg-gradient-to-b from-amber-400 to-amber-600 hover:to-orange-500 border-4 border-amber-200 rounded-xl py-4 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.4)] active:scale-95 transition-all"
+              >
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay" />
+                {loading ? (
+                  <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin relative z-10" />
+                ) : (
+                  <span className="text-xl font-black text-[#7c2d12] tracking-widest drop-shadow-sm relative z-10 flex items-center gap-2">
+                    INSERT COIN <span className="animate-pulse">▶</span>
+                  </span>
+                )}
+              </button>
+            </motion.form>
+          ) : (
+            <motion.div 
+              key="coin-animation"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center h-[280px]"
             >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Entrando...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4" />
-                  <span>Entrar no HIGAME</span>
-                </>
-              )}
-            </button>
-          </form>
+              {/* Coin Slot Area */}
+              <div className="relative w-24 h-32 flex flex-col items-center justify-end mb-8">
+                {/* The Coin */}
+                <motion.div
+                  initial={{ y: -100, opacity: 0, rotateY: 0 }}
+                  animate={{ 
+                    y: coinPhase === 'falling' ? -20 : 60, 
+                    opacity: coinPhase === 'inserted' ? 0 : 1,
+                    rotateY: coinPhase === 'falling' ? 360 : 0
+                  }}
+                  transition={{ duration: 0.8, type: 'spring', bounce: 0.5 }}
+                  className="w-12 h-12 bg-gradient-to-br from-amber-300 via-amber-500 to-orange-500 rounded-full border-2 border-yellow-200 shadow-[0_0_20px_rgba(251,191,36,0.8)] absolute z-20 flex items-center justify-center"
+                >
+                  <span className="font-black text-[#7c2d12] text-sm tracking-tighter">1 HC</span>
+                </motion.div>
 
-          {/* Footer */}
-          <p className="mt-8 text-center text-xs font-inter text-higame-muted">
-            Acesso restrito a colaboradores cadastrados.
-            <br />
-            Fale com seu administrador para solicitar acesso.
-          </p>
-        </motion.div>
-      </div>
+                {/* The Slot */}
+                <div className="w-16 h-4 bg-slate-950 rounded-full border border-slate-700 shadow-inner relative z-30" />
+                <div className="w-20 h-10 bg-slate-800 rounded-b-xl border-x-2 border-b-2 border-slate-600 absolute bottom-[-10px] z-10" />
+              </div>
+
+              {/* Text Effects */}
+              <div className="text-center h-16">
+                {coinPhase === 'falling' && (
+                  <motion.p 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
+                    className="text-xl font-black text-amber-400 animate-pulse tracking-widest"
+                  >
+                    INSERTING COIN...
+                  </motion.p>
+                )}
+                {coinPhase === 'inserted' && (
+                  <motion.p 
+                    initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} 
+                    className="text-2xl font-black text-higame-neon drop-shadow-[0_0_10px_rgba(34,211,238,0.8)] tracking-widest"
+                  >
+                    CREDIT 1
+                  </motion.p>
+                )}
+                {coinPhase === 'ready' && (
+                  <motion.p 
+                    initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} 
+                    className="text-3xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] animate-bounce tracking-widest mt-2"
+                  >
+                    PRESS START!
+                  </motion.p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   )
 }
